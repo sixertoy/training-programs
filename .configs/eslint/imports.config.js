@@ -4,7 +4,7 @@ import simpleImportSort from 'eslint-plugin-simple-import-sort'
 export default [
   {
     files: ['**/*.{ts,tsx}'],
-    ignores: ['**/*.config.{js,ts}', '**/eslint.config.js'],
+    ignores: ['**/*.config.{js,ts}', '**/eslint.config.js', '**/*.json'],
     plugins: {
       import: importPlugin,
       'simple-import-sort': simpleImportSort,
@@ -66,7 +66,10 @@ export default [
         node: {
           extensions: ['.js', '.jsx', '.ts', '.tsx'],
         },
-        typescript: true,
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        },
       },
     },
   },

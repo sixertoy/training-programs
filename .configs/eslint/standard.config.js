@@ -1,6 +1,7 @@
 export default [
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.json'],
     rules: {
       // Règles ESLint standard strictes (non dans recommended)
       'array-callback-return': [

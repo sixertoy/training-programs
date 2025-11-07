@@ -5,6 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 export default [
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.json'],
     settings: {
       react: {
         version: 'detect',

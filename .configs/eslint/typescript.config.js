@@ -1,19 +1,27 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import js from '@eslint/js';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default [
   ...tseslint.configs.recommended,
-  js.configs.recommended,
   {
+    ...js.configs.recommended,
     files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.json'],
+    linterOptions: {
+      reportUnusedDisableDirectives: true,
+    },
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.node,
+        ...globals.es2020,
+        ...globals.browser,
+        ...globals.serviceworker,
+      },
       parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
+        ecmaVersion: 2020,
+        projectService: true,
       },
     },
     rules: {
@@ -100,7 +108,7 @@ export default [
           allowBoolean: false,
           allowNever: false,
           allowNullish: false,
-          allowNumber: false,
+          allowNumber: true,
           allowRegExp: false,
         },
       ],

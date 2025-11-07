@@ -3,6 +3,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y'
 export default [
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.json'],
     plugins: {
       'jsx-a11y': jsxA11y,
     },
@@ -76,7 +77,7 @@ export default [
         {
           alert: ['onKeyUp', 'onKeyDown', 'onKeyPress'],
           body: ['onError', 'onLoad'],
-          dialog: ['onKeyUp', 'onKeyDown', 'onKeyPress'],
+          dialog: ['onClick', 'onKeyUp', 'onKeyDown', 'onKeyPress'],
           handlers: [
             'onClick',
             'onError',
