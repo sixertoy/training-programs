@@ -15,10 +15,12 @@ export default defineConfig({
     removeConsole(),
     sassDts(),
     checker({
-      typescript: true,
       eslint: {
+        dev: { logLevel: ['error'] },
         lintCommand: 'eslint .',
+        useFlatConfig: true,
       },
+      typescript: true,
     }),
   ],
   server: {
