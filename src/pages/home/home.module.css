@@ -1,20 +1,89 @@
 .container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
+  gap: 3rem;
+}
+
+.hero {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .title {
+  margin: 0 0 1rem 0;
   font-size: 3rem;
-  margin-bottom: 1rem;
-  color: #213547;
+  font-weight: 700;
 }
 
 .description {
-  font-size: 1.2rem;
-  color: #666;
+  margin: 0;
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.actionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   text-align: center;
+  align-items: center;
+}
+
+.icon {
+  font-size: 3rem;
+  color: #646cff;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.cardDescription {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  flex: 1;
+}
+
+.actionCard a {
+  text-decoration: none;
+  width: 100%;
+}
+
+.actionCard button {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .description {
+    font-size: 1.125rem;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .description {
+    color: rgba(0, 0, 0, 0.8);
+  }
+
+  .cardDescription {
+    color: rgba(0, 0, 0, 0.8);
+  }
 }
