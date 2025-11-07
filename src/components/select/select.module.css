@@ -1,0 +1,54 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: inherit;
+}
+
+.select {
+  width: 100%;
+  padding: 0.6em 1em;
+  font-size: 1em;
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  transition: border-color 0.25s, background-color 0.25s;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: 2px solid #646cff;
+  outline-offset: 2px;
+  border-color: #646cff;
+}
+
+.select.error {
+  border-color: #dc3545;
+}
+
+.select.error:focus {
+  outline-color: #dc3545;
+}
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.85rem;
+}
+
+@media (prefers-color-scheme: light) {
+  .select {
+    border-color: rgba(0, 0, 0, 0.2);
+    background-color: #f9f9f9;
+  }
+
+  .select:focus {
+    background-color: white;
+  }
+}

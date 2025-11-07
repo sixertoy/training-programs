@@ -15,19 +15,26 @@
     "cleanup": "rm -rf dist node_modules"
   },
   "dependencies": {
+    "luxon": "^3.7.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.9.5"
+    "react-hook-form": "^7.66.0",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.9.5",
+    "usehooks-ts": "^3.1.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.5.0",
     "@eslint/js": "^9.39.0",
     "@eslint/json": "0.14.0",
     "@types/eslint__js": "^8.42.3",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@types/react-router-dom": "^5.3.3",
+    "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.8",
