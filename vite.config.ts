@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import checker from 'vite-plugin-checker';
 import removeConsole from 'vite-plugin-remove-console';
 import sassDts from 'vite-plugin-sass-dts';
-import checker from 'vite-plugin-checker';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -12,13 +13,16 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tailwindcss(),
     removeConsole(),
     sassDts(),
     checker({
-      typescript: true,
       eslint: {
+        dev: { logLevel: ['error'] },
         lintCommand: 'eslint .',
+        useFlatConfig: true,
       },
+      typescript: true,
     }),
   ],
   server: {

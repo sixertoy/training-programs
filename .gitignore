@@ -330,6 +330,8 @@ temp/
 
 **/*.css.d.ts
 **/*.scss.d.ts
+**/*.d.css.ts
+**/*.d.scss.ts
 
 apps/**/lib
 apps/**/dist
