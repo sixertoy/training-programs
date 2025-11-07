@@ -12,3 +12,6 @@
 10. **useMemo pour les calculs complexes** - Optimiser les performances
 11. **useCallback pour les fonctions** - Quand passées à des composants mémorisés
 12. **Accessibilité (a11y) prioritaire** - Respecter WCAG 2.1 AA minimum (navigation clavier, ARIA, contraste, sémantique HTML)
+13. **Modale** -  Utiliser l'élément <dialog> de l'API HTML pour les modales
+14. **useId pour les IDs uniques** - Utiliser le hook `useId()` de React pour générer des IDs uniques dans les composants (éviter `Math.random()` ou `substr`)
+15. **Props spreading** - Lorsque des props sont spreadées avec `{...props}`, ajouter `// eslint-disable-next-line react/jsx-props-no-spreading` juste avant

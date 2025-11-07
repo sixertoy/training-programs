@@ -14,6 +14,7 @@ Les optimisations React (`React.memo`, `useMemo`, `useCallback`) doivent être u
 
 ### Principes généraux
 
+- **Ne pas utiliser l'index d'un tableau comme valeur de la prop `key`** lors de la création des composants multiples dans une boucle (conformément à la règle ESLint `react/no-array-index-key`).
 - **Ne pas optimiser prématurément** - Mesurer d'abord, optimiser ensuite
 - **Utiliser uniquement si nécessaire** - Chaque optimisation a un coût
 - **Combiner intelligemment** - React.memo nécessite souvent useCallback/useMemo pour être efficace
