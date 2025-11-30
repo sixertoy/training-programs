@@ -1,9 +1,3 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 3rem;
-}
-
 .hero {
   text-align: center;
   max-width: 800px;
@@ -19,7 +13,7 @@
 .description {
   margin: 0;
   font-size: 1.25rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
   line-height: 1.6;
 }
 
@@ -39,7 +33,7 @@
 
 .icon {
   font-size: 3rem;
-  color: #646cff;
+  color: var(--color-primary);
 }
 
 .cardTitle {
@@ -50,7 +44,7 @@
 
 .cardDescription {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
   line-height: 1.6;
   flex: 1;
 }
@@ -80,10 +74,10 @@
 
 @media (prefers-color-scheme: light) {
   .description {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--color-text-secondary-light);
   }
 
   .cardDescription {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--color-text-secondary-light);
   }
 }

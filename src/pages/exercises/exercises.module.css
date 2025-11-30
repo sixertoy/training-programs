@@ -29,13 +29,13 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-background-card);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .table thead {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-background-table-header);
 }
 
 .table th {
@@ -46,11 +46,11 @@
 
 .table td {
   padding: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--color-border);
 }
 
 .table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-background-table-row-hover);
 }
 
 .sortButton {
@@ -69,11 +69,11 @@
 }
 
 .sortButton:hover {
-  color: #646cff;
+  color: var(--color-primary);
 }
 
 .sortButton:focus-visible {
-  outline: 2px solid #646cff;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -101,18 +101,18 @@
 }
 
 .actionButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-background-hover);
 }
 
 .actionButton:focus-visible {
-  outline: 2px solid #646cff;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
 .empty {
   text-align: center;
   padding: 2rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-quaternary);
 }
 
 .form {
@@ -143,22 +143,22 @@
 
 @media (prefers-color-scheme: light) {
   .table {
-    background-color: #f9f9f9;
+    background-color: var(--color-background-card-light);
   }
 
   .table thead {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: var(--color-background-table-header-light);
   }
 
   .table td {
-    border-top-color: rgba(0, 0, 0, 0.1);
+    border-top-color: var(--color-border-light);
   }
 
   .table tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: var(--color-background-table-row-hover-light);
   }
 
   .empty {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--color-text-quaternary-light);
   }
 }

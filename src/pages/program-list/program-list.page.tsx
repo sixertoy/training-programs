@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import React from 'react';
 import { FaEye, FaPlay, FaTrash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import { Button, Card, Modal } from '../../components';
 import { useProgramList } from './program-list.hook';

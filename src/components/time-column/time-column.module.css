@@ -1,0 +1,61 @@
+.timeColumn {
+  width: 4rem;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+@media (prefers-color-scheme: light) {
+  .timeColumn {
+    border-right-color: var(--color-border-light);
+  }
+}
+
+.timeSlot {
+  height: 4rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  padding-top: 0.25rem;
+  position: relative;
+}
+
+.timeSlot::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background-color: var(--color-border);
+}
+
+@media (prefers-color-scheme: light) {
+  .timeSlot::after {
+    background-color: var(--color-border-light);
+  }
+}
+
+.timeLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-weight: 400;
+}
+
+@media (prefers-color-scheme: light) {
+  .timeLabel {
+    color: var(--color-text-tertiary-light);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .timeColumn {
+    width: 3rem;
+  }
+
+  .timeLabel {
+    font-size: 0.6875rem;
+  }
+}

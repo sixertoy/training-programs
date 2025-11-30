@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaPlus, FaTrash } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { Button, Card, Input, Modal, Select } from '../../components';
 import type { ExerciseFormat } from '../../interfaces';

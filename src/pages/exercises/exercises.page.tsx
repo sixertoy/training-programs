@@ -3,18 +3,18 @@ import { useForm } from 'react-hook-form';
 import { FaEdit, FaSort, FaSortDown, FaSortUp, FaTrash } from 'react-icons/fa';
 
 import { Button, Card, Input, Modal, Select } from '../../components';
-import { ExerciseTypeEnum } from '../../enums';
+import { ExerciceTypeEnum } from '../../enums';
 import type { Exercise } from '../../interfaces';
 import { useExercises } from './exercises.hook';
 import styles from './exercises.module.css';
 
-interface ExerciseFormData {
+interface ExerciceFormData {
   name: string;
-  type: ExerciseTypeEnum;
+  type: ExerciceTypeEnum;
   description: string;
 }
 
-export const ExercisesPage = React.memo(() => {
+export const ExercicesPage = React.memo(() => {
   const {
     cancelDelete,
     cancelEdit,
@@ -41,15 +41,15 @@ export const ExercisesPage = React.memo(() => {
     handleSubmit,
     register,
     reset,
-  } = useForm<ExerciseFormData>({
-    defaultValues: editingExercise || {
+  } = useForm<ExerciceFormData>({
+    defaultValues: editingExercise ?? {
       description: '',
       name: '',
-      type: ExerciseTypeEnum.UPPER_BODY,
+      type: ExerciceTypeEnum.UPPER_BODY,
     },
   });
 
-  const onSubmit = (data: ExerciseFormData) => {
+  const onSubmit = (data: ExerciceFormData) => {
     if (editingId) {
       handleUpdate(editingId, data);
     } else {
@@ -73,7 +73,7 @@ export const ExercisesPage = React.memo(() => {
     reset();
   };
 
-  const exerciseTypeOptions = Object.values(ExerciseTypeEnum).map((type) => ({
+  const exerciseTypeOptions = Object.values(ExerciceTypeEnum).map((type) => ({
     label: type,
     value: type,
   }));
@@ -109,7 +109,7 @@ export const ExercisesPage = React.memo(() => {
           options={filterOptions}
           value={filterType}
           onChange={(e) => {
-            setFilterType(e.target.value as ExerciseTypeEnum | 'all');
+            setFilterType(e.target.value as ExerciceTypeEnum | 'all');
           }}
         />
       </Card>
@@ -282,4 +282,4 @@ export const ExercisesPage = React.memo(() => {
   );
 });
 
-ExercisesPage.displayName = 'ExercisesPage';
+ExercicesPage.displayName = 'ExercisesPage';

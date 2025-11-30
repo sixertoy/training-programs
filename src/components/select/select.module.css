@@ -16,39 +16,41 @@
   font-size: 1em;
   font-family: inherit;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-input);
+  background-color: var(--color-background-input);
   color: inherit;
-  transition: border-color 0.25s, background-color 0.25s;
+  transition:
+    border-color 0.25s,
+    background-color 0.25s;
   cursor: pointer;
 }
 
 .select:focus {
-  outline: 2px solid #646cff;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  border-color: #646cff;
+  border-color: var(--color-primary);
 }
 
 .select.error {
-  border-color: #dc3545;
+  border-color: var(--color-border-error);
 }
 
 .select.error:focus {
-  outline-color: #dc3545;
+  outline-color: var(--color-border-error);
 }
 
 .errorMessage {
-  color: #dc3545;
+  color: var(--color-danger);
   font-size: 0.85rem;
 }
 
 @media (prefers-color-scheme: light) {
   .select {
-    border-color: rgba(0, 0, 0, 0.2);
-    background-color: #f9f9f9;
+    border-color: var(--color-border-input-light);
+    background-color: var(--color-background-input-light);
   }
 
   .select:focus {
-    background-color: white;
+    background-color: var(--color-background-input-focus-light);
   }
 }

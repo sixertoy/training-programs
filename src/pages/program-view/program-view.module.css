@@ -50,9 +50,9 @@
 
 .exerciseItem {
   padding: 1rem;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-background-card);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
 }
 
 .exerciseHeader {
@@ -72,9 +72,9 @@
 
 .exerciseType {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-tertiary);
   padding: 0.25rem 0.75rem;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-background-hover);
   border-radius: 12px;
 }
 
@@ -86,7 +86,7 @@
 .exerciseDescription {
   margin: 0.5rem 0 0 0;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
 }
 
 .actions {
@@ -116,24 +116,24 @@
 
 @media (prefers-color-scheme: light) {
   .seriesInfo {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--color-text-secondary-light);
   }
 
   .exerciseFormat {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--color-text-secondary-light);
   }
 
   .exerciseType {
-    color: rgba(0, 0, 0, 0.7);
-    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--color-text-tertiary-light);
+    background-color: var(--color-background-hover-light);
   }
 
   .exerciseItem {
-    background-color: #f9f9f9;
-    border-color: rgba(0, 0, 0, 0.1);
+    background-color: var(--color-background-card-light);
+    border-color: var(--color-border-light);
   }
 
   .exerciseDescription {
-    color: rgba(0, 0, 0, 0.8);
+    color: var(--color-text-secondary-light);
   }
 }

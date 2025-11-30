@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { FaArrowLeft, FaPause, FaStop } from 'react-icons/fa';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import { Button, Card } from '../../components';
+import { useWakeLock } from '../../hooks';
 import { useProgramView } from '../program-view/program-view.hook';
 import styles from './program-run.module.css';
 
@@ -14,6 +15,10 @@ export const ProgramRunPage = React.memo(() => {
     id ?? '',
     isRunning,
   );
+
+  // Activer le wake lock quand le chronomètre est en cours d'exécution
+  const shouldKeepScreenOn = isRunning && timerStatus.state !== 'finished';
+  useWakeLock(shouldKeepScreenOn);
 
   useEffect(() => {
     if (!program) {

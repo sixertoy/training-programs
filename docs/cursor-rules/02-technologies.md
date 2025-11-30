@@ -31,3 +31,4 @@
 - **react-icons** - Bibliothèque d'icônes
 - **uuid** - Génération d'identifiants uniques
 - **usehooks-ts** - Hooks TypeScript réutilisables (ex: `useToggle`)
+- **@nappr/nappr-styles** - Utilisée pour les styles css

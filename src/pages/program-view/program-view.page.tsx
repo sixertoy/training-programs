@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaArrowLeft, FaPlay } from 'react-icons/fa';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router';
 
 import { Button, Card } from '../../components';
 import { useProgram } from '../../contexts/program';

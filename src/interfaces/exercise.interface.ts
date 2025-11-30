@@ -1,8 +1,8 @@
-import type { ExerciseTypeEnum } from '../enums';
+import type { ExerciceTypeEnum } from '../enums';
 
 export interface Exercise {
   id: string;
   name: string;
-  type: ExerciseTypeEnum;
+  type: ExerciceTypeEnum;
   description: string;
 }

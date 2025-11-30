@@ -39,7 +39,7 @@
 .empty {
   text-align: center;
   padding: 2rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-quaternary);
 }
 
 .exercisesList {
@@ -70,7 +70,7 @@
 .exerciseType {
   margin: 0;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-tertiary);
 }
 
 .exerciseParams {
@@ -111,10 +111,10 @@
 
 @media (prefers-color-scheme: light) {
   .empty {
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--color-text-quaternary-light);
   }
 
   .exerciseType {
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--color-text-tertiary-light);
   }
 }

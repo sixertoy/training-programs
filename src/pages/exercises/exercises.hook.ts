@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { useExercise } from '../../contexts/exercise';
-import type { ExerciseTypeEnum } from '../../enums';
+import type { ExerciceTypeEnum } from '../../enums';
 import type { Exercise } from '../../interfaces';
 
 type SortField = 'name' | 'type';
@@ -11,7 +11,7 @@ export const useExercises = () => {
   const { addExercise, deleteExercise, exercises, updateExercise } = useExercise();
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [filterType, setFilterType] = useState<ExerciseTypeEnum | 'all'>('all');
+  const [filterType, setFilterType] = useState<ExerciceTypeEnum | 'all'>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
