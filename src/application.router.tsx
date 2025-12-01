@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router';
 import { ApplicationLayout } from './layouts';
 import { CreateProgramPage } from './pages/create-program';
 import { DayPage } from './pages/day';
-import { ExercicesPage } from './pages/exercises';
+import { ExercicesPage } from './pages/exercices';
 import { Home } from './pages/home';
 import { ProgramListPage } from './pages/program-list';
 import { ProgramRunPage } from './pages/program-run';

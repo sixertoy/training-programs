@@ -1,3 +1,4 @@
+import classnames from 'classnames';
 import React from 'react';
 
 import styles from './event-slot.module.css';
@@ -9,14 +10,14 @@ interface EventSlotProps {
 }
 
 export const EventSlot = React.memo(
-  ({ isCurrentHour, currentHourOffset, children }: EventSlotProps) => {
+  ({ children, currentHourOffset, isCurrentHour }: EventSlotProps) => {
     return (
-      <div className={`${styles.eventSlot} ${isCurrentHour ? styles.currentHour : ''}`}>
+      <div
+        className={classnames(styles.eventSlot, {
+          [styles.currentHour]: isCurrentHour,
+        })}>
         {isCurrentHour && currentHourOffset !== null && (
-          <div
-            className={styles.currentTimeIndicator}
-            style={{ top: `${currentHourOffset}%` }}
-          />
+          <div className={styles.currentTimeIndicator} style={{ top: `${currentHourOffset}%` }} />
         )}
         <div className={styles.eventSlotContent}>{children}</div>
       </div>

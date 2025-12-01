@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { FaEdit, FaSort, FaSortDown, FaSortUp, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaPlus, FaSort, FaSortDown, FaSortUp, FaTrash } from 'react-icons/fa';
 
 import { Button, Card, Input, Modal, Select } from '../../components';
 import { ExerciceTypeEnum } from '../../enums';
@@ -92,16 +92,14 @@ export const ExercicesPage = React.memo(() => {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Bibliothèque d&apos;Exercices</h1>
-        <Button
-          onClick={() => {
-            setIsAddModalOpen(true);
-          }}>
-          Ajouter un exercice
-        </Button>
-      </div>
+    <div className="flex-rows gap-1-5v">
+      <button
+        className="btn btn--rounded btn--primary"
+        onClick={() => {
+          setIsAddModalOpen(true);
+        }}>
+        Ajouter un exercice
+      </button>
 
       <Card className={styles.filters}>
         <Select
@@ -185,15 +183,19 @@ export const ExercicesPage = React.memo(() => {
       <Modal
         footer={
           <React.Fragment>
-            <Button
-              variant="secondary"
+            <button
+              className="btn btn--rounded btn--secondary"
               onClick={() => {
                 setIsAddModalOpen(false);
                 reset();
               }}>
               Annuler
-            </Button>
-            <Button onClick={handleSubmit(onSubmit)}>Ajouter</Button>
+            </button>
+            <button
+              className="btn btn--rounded btn--primary"
+              onClick={() => handleSubmit(onSubmit)}>
+              Ajouter
+            </button>
           </React.Fragment>
         }
         isOpen={isAddModalOpen}
@@ -202,7 +204,7 @@ export const ExercicesPage = React.memo(() => {
           setIsAddModalOpen(false);
           reset();
         }}>
-        <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+        <form className={styles.form} onSubmit={() => handleSubmit(onSubmit)}>
           <Input
             label="Nom"
             // eslint-disable-next-line react/jsx-props-no-spreading
@@ -229,16 +231,20 @@ export const ExercicesPage = React.memo(() => {
         <Modal
           footer={
             <React.Fragment>
-              <Button variant="secondary" onClick={handleCancel}>
+              <button className="btn btn--rounded btn--secondary" onClick={handleCancel}>
                 Annuler
-              </Button>
-              <Button onClick={handleSubmit(onSubmit)}>Enregistrer</Button>
+              </button>
+              <button
+                className="btn btn--rounded btn--primary"
+                onClick={() => handleSubmit(onSubmit)}>
+                Enregistrer
+              </button>
             </React.Fragment>
           }
           isOpen={!!editingId}
           title="Modifier l'exercice"
           onClose={handleCancel}>
-          <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+          <form className={styles.form} onSubmit={() => handleSubmit(onSubmit)}>
             <Input
               label="Nom"
               // eslint-disable-next-line react/jsx-props-no-spreading
@@ -265,12 +271,12 @@ export const ExercicesPage = React.memo(() => {
       <Modal
         footer={
           <React.Fragment>
-            <Button variant="secondary" onClick={cancelDelete}>
+            <button className="btn btn--rounded btn--secondary" onClick={cancelDelete}>
               Annuler
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
+            </button>
+            <button className="btn btn--rounded btn--danger" onClick={handleDelete}>
               Supprimer
-            </Button>
+            </button>
           </React.Fragment>
         }
         isOpen={!!deleteId}

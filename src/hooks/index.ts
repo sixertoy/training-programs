@@ -1,1 +1,2 @@
-export * from './use-wake-lock.hook';
+export * from './modal.hook';
+export * from './wake-lock.hook';

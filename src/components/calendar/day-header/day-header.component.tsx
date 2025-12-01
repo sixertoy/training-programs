@@ -16,14 +16,14 @@ interface DayHeaderProps {
 
 export const DayHeader = React.memo(
   ({
+    canGoNext,
+    canGoPrevious,
     formattedDate,
     formattedDateShort,
     isToday,
-    onPrevious,
     onNext,
+    onPrevious,
     onToday,
-    canGoPrevious,
-    canGoNext,
   }: DayHeaderProps) => {
     return (
       <div className={styles.header}>
@@ -35,11 +35,7 @@ export const DayHeader = React.memo(
         />
         <div className={styles.dateContainer}>
           <h1 className={styles.dateTitle}>{formattedDate}</h1>
-          <button
-            className={styles.todayButton}
-            disabled={isToday}
-            type="button"
-            onClick={onToday}>
+          <button className={styles.todayButton} disabled={isToday} type="button" onClick={onToday}>
             Aujourd&apos;hui
           </button>
         </div>

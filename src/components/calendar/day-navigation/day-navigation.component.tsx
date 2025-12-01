@@ -11,7 +11,7 @@ interface DayNavigationProps {
 }
 
 export const DayNavigation = React.memo(
-  ({ onPrevious, onNext, canGoPrevious, canGoNext }: DayNavigationProps) => {
+  ({ canGoNext, canGoPrevious, onNext, onPrevious }: DayNavigationProps) => {
     return (
       <div className={styles.navigation}>
         <button
