@@ -1,4 +1,4 @@
-import { reactConfig } from '@nappr/eslint-config';
+import { reactConfig } from '@nappr/eslint-config/react';
 import tseslint from 'typescript-eslint';
 
 export default [
