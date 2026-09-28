@@ -1,5 +1,13 @@
-export * from './commons.interface';
-export * from './configs.interface';
-export * from './exercise.interface';
-export * from './exercise-in-program.interface';
-export * from './program.interface';
+export type { Circuit } from './circuit.interface';
+export type { CircuitTiming } from './circuit-timing.interface';
+export type { DayProgram } from './day-program.interface';
+export type { Exercise } from './exercise.interface';
+export type { GlobalStats } from './global-stats.interface';
+export type { HealthStats } from './health-stats.interface';
+export type { HealthStatsInput } from './health-stats-input.interface';
+export type { NextSession } from './next-session.interface';
+export type { NextSessionDay } from './next-session-day.interface';
+export type { StatsDay } from './stats-day.interface';
+export type { StatsWeek } from './stats-week.interface';
+export type { UserProfile } from './user-profile.interface';
+export type { WeekData } from './week-data.interface';

@@ -1,91 +1,38 @@
-@import './styles/colors.css';
-@import '@nappr/nappr-styles';
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+@import 'tailwindcss';
 
-/* Structure PWA mobile : body ne scroll pas */
-html,
-body {
-  height: 100%;
-  height: 100dvh; /* Support pour les navigateurs mobiles */
-  margin: 0;
-  overflow: hidden; /* Empêche le scroll sur le body */
-  padding: 0;
-  width: 100%;
-}
-
-body {
-  max-width: 768px;
-  margin: 0 auto;
-}
-
-#root {
-  height: 100%;
-  height: 100dvh;
-  overflow: hidden;
-  width: 100%;
-}
-
-/*
-:root {
-  font-family:
-    system-ui, Avenir, Helvetica, Arial,
-    sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: var(--color-text-primary);
-  background-color: var(--color-background-primary);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@theme inline {
+  --color-background: #0d0d0d;
+  --color-foreground: #f5f5f5;
+  --color-card: #1a1a1a;
+  --color-card-foreground: #f5f5f5;
+  --color-primary: #cbff47;
+  --color-primary-foreground: #0d0d0d;
+  --color-secondary: #2a2a2a;
+  --color-secondary-foreground: #f5f5f5;
+  --color-muted: #2a2a2a;
+  --color-muted-foreground: #888888;
+  --color-accent: #cbff47;
+  --color-accent-foreground: #0d0d0d;
+  --color-border: #2a2a2a;
+  --color-ring: #cbff47;
+  --radius: 1rem;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+html, body, #root {
+  height: 100%;
+  background-color: #0d0d0d;
+  color: #f5f5f5;
+  font-family: 'Nunito', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  margin: 0;
+::-webkit-scrollbar {
+  display: none;
 }
 
-p {
-  margin: 0;
-}
-
-a {
-  font-weight: 500;
-  color: var(--color-link);
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: var(--color-link-hover-dark);
-}
-
-button {
-  font-family: inherit;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: var(--color-text-primary-light);
-    background-color: var(--color-background-primary-light);
-  }
-
-  a:hover {
-    color: var(--color-link-hover-light);
-  }
-} */
+scrollbar-width: none;

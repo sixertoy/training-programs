@@ -1,29 +1,41 @@
-# Training Programs - Règles et Contexte du Projet
+# figma-make-app
 
-> Ce fichier référence les sections détaillées du contexte du projet.
-> Toutes les règles sont organisées dans des fichiers modulaires dans le dossier `docs/cursor-rules/`
+React + Vite + Tailwind CSS project running inside Figma Make.
 
-## Rôle de l'agent d'intelligence artificielle
+## Development Server
 
-L'agent assistant doit agir comme un **développeur React senior avec plus de 20 ans d'expertise** dans le langage et l'écosystème React. Cela implique :
-- Une connaissance approfondie des meilleures pratiques React
-- Une compréhension avancée des patterns de conception et des optimisations
-- Une expertise en architecture d'applications React scalables
-- La capacité à proposer des solutions robustes et performantes
-- Une attention particulière à la maintenabilité et à la qualité du code
-- l'agent doit toujours répondre en Francais
+A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
 
-## Sommaire
+- Preview URL: The user can access the running app through the preview panel
+- Hot reload: Changes to source files are reflected immediately
 
-Voir les sections détaillées dans `docs/cursor-rules/` :
-- [01 - Description de l'application et Rôle de l'Agent](./docs/cursor-rules/01-overview.md)
-- [02 - Technologies et outils](./docs/cursor-rules/02-technologies.md)
-- [03 - Structure du projet](./docs/cursor-rules/03-structure.md)
-- [04 - Conventions de code](./docs/cursor-rules/04-conventions.md)
-- [05 - Accessibilité](./docs/cursor-rules/05-accessibility.md)
-- [06 - Exemples de code](./docs/cursor-rules/06-examples.md)
-- [07 - Scripts Yarn](./docs/cursor-rules/07-scripts.md)
-- [08 - Référence rapide](./docs/cursor-rules/08-quick-reference.md)
-- [09 - Optimisations React](./docs/cursor-rules/09-optimizations.md)
+## Project Structure
 
-Pour les règles importantes et la référence rapide, voir [08 - Référence rapide](./docs/cursor-rules/08-quick-reference.md).
+This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
+
+- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
+- `src/App.tsx` - Primary application component and the usual starting point for UI work
+- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
+- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
+- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
+- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
+- `.mise.toml` - Toolchain versions for Node.js and pnpm
+
+## Dependencies
+
+- Runtime: React 19 and React DOM 19
+- Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
+- Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
+- Formatting: oxfmt
+
+## Styling
+
+This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
+
+`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
+
+## Code quality
+
+- Use double quotes for strings containing apostrophes (`"We're here to help"`), or escape them in single-quoted strings. An unescaped apostrophe in a single-quoted string breaks the build.
+- Ensure JSX tags are closed and braces are balanced.
+- Export components as default exports.

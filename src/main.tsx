@@ -1,16 +1,17 @@
 import './index.css';
 
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
-import { Application } from './application';
+import App from './App';
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <Application />
-    </BrowserRouter>
-  </StrictMode>,
+const root = document.getElementById('root');
+if (!root) {
+  throw new Error('Root element not found');
+}
+
+ReactDOM.createRoot(root).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );

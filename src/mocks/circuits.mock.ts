@@ -1,0 +1,43 @@
+import type { Circuit } from '../interfaces/circuit.interface';
+
+export const initialCircuits: Circuit[] = [
+  {
+    color: '#FF6B35',
+    cycles: 3,
+    exerciseIds: ['4', '2', '1'],
+    exerciseTime: 45,
+    id: 'c1',
+    name: 'Force Upper',
+    prepTime: 10,
+    recoveryTime: 90,
+    restBetweenCycles: 60,
+    restBetweenExercises: 15,
+    rounds: 4,
+  },
+  {
+    color: '#C62A47',
+    cycles: 4,
+    exerciseIds: ['1', '3', '6'],
+    exerciseTime: 30,
+    id: 'c2',
+    name: 'Cardio HIIT',
+    prepTime: 5,
+    recoveryTime: 120,
+    restBetweenCycles: 45,
+    restBetweenExercises: 10,
+    rounds: 6,
+  },
+  {
+    color: '#1A936F',
+    cycles: 3,
+    exerciseIds: ['1', '2', '3', '4', '5', '6'],
+    exerciseTime: 40,
+    id: 'c3',
+    name: 'Full Body',
+    prepTime: 15,
+    recoveryTime: 90,
+    restBetweenCycles: 60,
+    restBetweenExercises: 20,
+    rounds: 4,
+  },
+];
