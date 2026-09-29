@@ -4,7 +4,7 @@ import { IconBack } from '../../assets/icons';
 import { ACCENT_PALETTE, AccentColor } from '../../enums';
 import { computeHealthStats } from '../../helpers';
 import type { UserProfile } from '../../interfaces';
-import { Stepper } from '../stepper';
+import { Stepper } from '../../components/stepper';
 
 export interface ProfileScreenProps {
   profile: UserProfile;

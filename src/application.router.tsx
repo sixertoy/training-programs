@@ -1,14 +1,14 @@
 import { type ComponentType, createElement } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 
-import { CircuitsScreenPage } from './components/circuits-screen/circuits-screen.page';
-import { CreateCircuitScreenPage } from './components/create-circuit-screen/create-circuit-screen.page';
-import { HomeScreenPage } from './components/home-screen/home-screen.page';
-import { ProfileScreenPage } from './components/profile-screen/profile-screen.page';
-import { TimerScreenPage } from './components/timer-screen/timer-screen.page';
-import { WeeklyScreenPage } from './components/weekly-screen/weekly-screen.page';
 import { APP_ROUTES, type RouteComponentKey } from './config';
 import { ApplicationLayout } from './layouts';
+import { CircuitsScreenPage } from './pages/circuits-screen/circuits-screen.page';
+import { CreateCircuitScreenPage } from './pages/create-circuit-screen/create-circuit-screen.page';
+import { HomeScreenPage } from './pages/home-screen/home-screen.page';
+import { ProfileScreenPage } from './pages/profile-screen/profile-screen.page';
+import { TimerScreenPage } from './pages/timer-screen/timer-screen.page';
+import { WeeklyScreenPage } from './pages/weekly-screen/weekly-screen.page';
 
 const ROUTE_PAGES: Record<RouteComponentKey, ComponentType> = {
   CircuitsScreen: CircuitsScreenPage,

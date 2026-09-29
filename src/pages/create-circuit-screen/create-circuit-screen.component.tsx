@@ -5,7 +5,7 @@ import { AccentColor, CARD_COLORS } from '../../enums';
 import { circuitDurationMin, withAlpha } from '../../helpers';
 import type { Circuit, Exercise } from '../../interfaces';
 import { findMuscleGroup } from '../../mocks';
-import { Stepper } from '../stepper';
+import { Stepper } from '../../components/stepper';
 
 export interface CreateCircuitScreenProps {
   accent: string;

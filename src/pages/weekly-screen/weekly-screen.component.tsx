@@ -5,7 +5,7 @@ import { TODAY_INDEX } from '../../constants/program.constants';
 import { withAlpha } from '../../helpers';
 import type { Circuit, DayProgram } from '../../interfaces';
 import { WEEK_HISTORY } from '../../mocks';
-import { DayAssignSheet } from '../day-assign-sheet';
+import { DayAssignSheet } from '../../components/day-assign-sheet';
 
 export interface WeeklyScreenProps {
   accent: string;
