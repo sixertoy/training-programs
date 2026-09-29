@@ -7,19 +7,21 @@ import type { Circuit, Exercise } from '../../interfaces';
 import { findMuscleGroup } from '../../mocks';
 import { Stepper } from '../stepper';
 
+export interface CreateCircuitScreenProps {
+  accent: string;
+  exercises: Exercise[];
+  initial?: Circuit;
+  onBack: () => void;
+  onSave: (circuit: Circuit) => void;
+}
+
 export function CreateCircuitScreen({
   accent,
   exercises,
   initial,
   onBack,
   onSave,
-}: {
-  onBack: () => void;
-  onSave: (c: Circuit) => void;
-  exercises: Exercise[];
-  initial?: Circuit;
-  accent: string;
-}) {
+}: CreateCircuitScreenProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [color, setColor] = useState(initial?.color ?? CARD_COLORS[0]);
   const [prepTime, setPrepTime] = useState(initial?.prepTime ?? 10);

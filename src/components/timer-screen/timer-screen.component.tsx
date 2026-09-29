@@ -5,7 +5,7 @@ import { AccentColor } from '../../enums';
 import { withAlpha } from '../../helpers';
 import type { Circuit, Exercise } from '../../interfaces';
 
-interface TimerScreenProps {
+export interface TimerScreenProps {
   accent: string;
   circuit?: Circuit;
   exercises: Exercise[];

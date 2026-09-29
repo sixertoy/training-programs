@@ -1,1 +1,1 @@
-export type Screen = 'home' | 'weekly' | 'circuits' | 'create-circuit' | 'timer' | 'profile';
+export type { RouteId as Screen } from '../config';

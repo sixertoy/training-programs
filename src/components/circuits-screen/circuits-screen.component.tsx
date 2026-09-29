@@ -2,7 +2,7 @@ import { IconPlus } from '../../assets/icons';
 import { circuitDurationMin, withAlpha } from '../../helpers';
 import type { Circuit, Exercise } from '../../interfaces';
 
-interface CircuitsScreenProps {
+export interface CircuitsScreenProps {
   accent: string;
   circuits: Circuit[];
   exercises: Exercise[];

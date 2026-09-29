@@ -6,7 +6,7 @@ import { computeHealthStats } from '../../helpers';
 import type { UserProfile } from '../../interfaces';
 import { Stepper } from '../stepper';
 
-interface ProfileScreenProps {
+export interface ProfileScreenProps {
   profile: UserProfile;
   onSave: (p: UserProfile) => void;
   onBack: () => void;

@@ -1,0 +1,51 @@
+{
+  "routes": [
+    {
+      "component": "HomeScreen",
+      "id": "home",
+      "index": true,
+      "path": "",
+      "showNav": true,
+      "nav": { "icon": "home", "label": "Accueil", "order": 0 }
+    },
+    {
+      "component": "WeeklyScreen",
+      "id": "weekly",
+      "path": "programme",
+      "showNav": true,
+      "nav": { "icon": "calendar", "label": "Programme", "order": 1 }
+    },
+    {
+      "component": "CircuitsScreen",
+      "id": "circuits",
+      "path": "circuits",
+      "showNav": true,
+      "nav": { "icon": "dumbbell", "label": "Circuits", "order": 2 }
+    },
+    {
+      "component": "TimerScreen",
+      "id": "timer",
+      "path": "seance",
+      "showNav": true,
+      "nav": { "icon": "flash", "label": "Séance", "order": 3 }
+    },
+    {
+      "component": "CreateCircuitScreen",
+      "id": "create-circuit",
+      "path": "circuits/nouveau",
+      "showNav": false
+    },
+    {
+      "component": "CreateCircuitScreen",
+      "id": "edit-circuit",
+      "path": "circuits/:circuitId/editer",
+      "showNav": false
+    },
+    {
+      "component": "ProfileScreen",
+      "id": "profile",
+      "path": "profil",
+      "showNav": false
+    }
+  ]
+}

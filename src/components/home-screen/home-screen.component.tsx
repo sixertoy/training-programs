@@ -1,37 +1,43 @@
 import { IconGear, IconPlay } from '../../assets/icons';
-import { BODY_PARTS, CIRCUIT_MUSCLES, TODAY_INDEX } from '../../constants/program.constants';
-import { computeGlobalStats, getNextSession, withAlpha } from '../../helpers';
-import type { DayProgram, UserProfile } from '../../interfaces';
-import { findMuscleGroup, WEEK_HISTORY } from '../../mocks';
+import { withAlpha } from '../../helpers';
+import type { NextSession, UserProfile } from '../../interfaces';
+import { findMuscleGroup } from '../../mocks';
 
-interface HomeScreenProps {
+export interface HomeScreenProps {
   accent: string;
-  currentWeekDays: DayProgram[];
+  bodyPartCount: Record<string, number>;
+  maxCount: number;
+  nextSession: NextSession | null;
   onGoToProfile: () => void;
   onGoToTimer: () => void;
   onGoToWeekly: () => void;
   profile: UserProfile;
+  sortedParts: string[];
+  sparkData: number[];
+  sparkMax: number;
+  totalExerciseReps: number;
+  totalHours: number;
+  totalMinsRem: number;
+  totalSessions: number;
 }
 
 export function HomeScreen({
   accent,
-  currentWeekDays,
+  bodyPartCount,
+  maxCount,
+  nextSession,
   onGoToProfile,
   onGoToTimer,
   onGoToWeekly,
   profile,
+  sortedParts,
+  sparkData,
+  sparkMax,
+  totalExerciseReps,
+  totalHours,
+  totalMinsRem,
+  totalSessions,
 }: HomeScreenProps) {
-  const { bodyPartCount, maxCount, totalExerciseReps, totalMin, totalSessions } =
-    computeGlobalStats(WEEK_HISTORY, BODY_PARTS, CIRCUIT_MUSCLES);
-  const nextSession = getNextSession(currentWeekDays, TODAY_INDEX);
-  const sparkData = WEEK_HISTORY.slice()
-    .reverse()
-    .map((w) => w.stats.totalMin);
-  const sparkMax = Math.max(...sparkData);
-  const sortedParts = [...BODY_PARTS].sort((a, b) => bodyPartCount[b] - bodyPartCount[a]);
-  const totalHours = Math.floor(totalMin / 60);
-  const totalMinsRem = totalMin % 60;
-
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-5 pt-8 pb-5 flex items-start justify-between">

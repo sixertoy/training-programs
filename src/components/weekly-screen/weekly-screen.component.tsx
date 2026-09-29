@@ -7,7 +7,7 @@ import type { Circuit, DayProgram } from '../../interfaces';
 import { WEEK_HISTORY } from '../../mocks';
 import { DayAssignSheet } from '../day-assign-sheet';
 
-interface WeeklyScreenProps {
+export interface WeeklyScreenProps {
   accent: string;
   circuits: Circuit[];
   currentWeekDays: DayProgram[];
