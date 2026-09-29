@@ -6,10 +6,9 @@ import type { CircuitsScreenProps } from './circuits-screen.component';
 
 export function useCircuitsScreen(): CircuitsScreenProps {
   const navigate = useNavigate();
-  const { accent, circuits, exercises } = useApp();
+  const { circuits, exercises } = useApp();
 
   return {
-    accent,
     circuits,
     exercises,
     onCreateNew: () => {

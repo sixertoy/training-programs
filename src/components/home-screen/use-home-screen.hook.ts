@@ -10,7 +10,7 @@ import type { HomeScreenProps } from './home-screen.component';
 
 export function useHomeScreen(): HomeScreenProps {
   const navigate = useNavigate();
-  const { accent, currentWeekDays, profile } = useApp();
+  const { currentWeekDays, profile } = useApp();
 
   const stats = useMemo(() => computeGlobalStats(WEEK_HISTORY, BODY_PARTS, CIRCUIT_MUSCLES), []);
   const nextSession = useMemo(
@@ -33,7 +33,6 @@ export function useHomeScreen(): HomeScreenProps {
   const totalMinsRem = stats.totalMin % 60;
 
   return {
-    accent,
     bodyPartCount: stats.bodyPartCount,
     maxCount: stats.maxCount,
     nextSession,

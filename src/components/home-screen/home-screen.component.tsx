@@ -1,10 +1,11 @@
+import cn from 'classnames';
+
 import { IconGear, IconPlay } from '../../assets/icons';
-import { withAlpha } from '../../helpers';
 import type { NextSession, UserProfile } from '../../interfaces';
 import { findMuscleGroup } from '../../mocks';
+import ui from '../../styles/ui.module.scss';
 
 export interface HomeScreenProps {
-  accent: string;
   bodyPartCount: Record<string, number>;
   maxCount: number;
   nextSession: NextSession | null;
@@ -22,7 +23,6 @@ export interface HomeScreenProps {
 }
 
 export function HomeScreen({
-  accent,
   bodyPartCount,
   maxCount,
   nextSession,
@@ -42,17 +42,19 @@ export function HomeScreen({
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-5 pt-8 pb-5 flex items-start justify-between">
         <div>
-          <p className="text-xs font-800 tracking-widest uppercase" style={{ color: accent }}>
+          <p className={cn('text-xs font-800 tracking-widest uppercase', ui.accentText)}>
             Lundi · 16 sept. 2026
           </p>
           <h1 className="text-3xl font-900 mt-1">Bonjour,</h1>
-          <p className="text-3xl font-900" style={{ color: accent }}>
+          <p className={cn('text-3xl font-900', ui.accentText)}>
             {profile.firstName || 'Athlète'} 👊
           </p>
         </div>
         <button
-          className="w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90"
-          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
+          className={cn(
+            'w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90',
+            ui.iconButton,
+          )}
           onClick={onGoToProfile}>
           <IconGear />
         </button>
@@ -60,39 +62,37 @@ export function HomeScreen({
 
       {nextSession && (
         <div className="mx-5 mb-5">
-          <p
-            className="text-xs font-800 tracking-widest uppercase mb-2.5"
-            style={{ color: '#555' }}>
+          <p className={cn('text-xs font-800 tracking-widest uppercase mb-2.5', ui.sectionLabel)}>
             Prochaine séance
           </p>
           <div
-            className="rounded-2xl p-5 flex items-center justify-between"
-            style={{
-              background: 'linear-gradient(135deg, #1a1a1a 0%, #222 100%)',
-              border: `1px solid ${withAlpha(accent, 0.18)}`,
-            }}>
+            className={cn('rounded-2xl p-5 flex items-center justify-between', ui.nextSessionCard)}>
             <div>
               <div className="flex items-center gap-2 mb-1.5">
                 <span
-                  className="text-xs font-900 tracking-widest uppercase px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: withAlpha(accent, 0.13), color: accent }}>
+                  className={cn(
+                    'text-xs font-900 tracking-widest uppercase px-2.5 py-1 rounded-full',
+                    ui.accentTint13,
+                  )}>
                   {nextSession.day}
                 </span>
-                <span className="text-xs font-700" style={{ color: '#555' }}>
-                  demain
-                </span>
+                <span className={cn('text-xs font-700', ui.textDim)}>demain</span>
               </div>
               <p className="text-xl font-900">{nextSession.circuit}</p>
-              <p className="text-sm font-600 mt-1" style={{ color: '#666' }}>
+              <p className={cn('text-sm font-600 mt-1', ui.textBody)}>
                 {nextSession.exercises} exercices
               </p>
             </div>
             <button
-              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95"
-              style={{ backgroundColor: accent }}
+              className={cn(
+                'w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95',
+                ui.accentBg,
+              )}
               onClick={onGoToTimer}>
-              <span style={{ color: '#0d0d0d', marginLeft: 2 }}>
-                <IconPlay />
+              <span className={ui.textOnAccent}>
+                <span className={ui.playIconOffset}>
+                  <IconPlay />
+                </span>
               </span>
             </button>
           </div>
@@ -100,7 +100,7 @@ export function HomeScreen({
       )}
 
       <div className="px-5 mb-5">
-        <p className="text-xs font-800 tracking-widest uppercase mb-2.5" style={{ color: '#555' }}>
+        <p className={cn('text-xs font-800 tracking-widest uppercase mb-2.5', ui.sectionLabel)}>
           Statistiques globales
         </p>
         <div className="grid grid-cols-3 gap-2.5">
@@ -111,39 +111,32 @@ export function HomeScreen({
           ].map((s) => (
             <div
               key={s.label}
-              className="rounded-2xl p-4 flex flex-col items-center text-center"
-              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-              <p className="text-2xl font-900 leading-tight" style={{ color: accent }}>
-                {s.value}
-              </p>
-              <p className="text-xs font-700 mt-1" style={{ color: '#555' }}>
-                {s.label}
-              </p>
+              className={cn('rounded-2xl p-4 flex flex-col items-center text-center', ui.card)}>
+              <p className={cn('text-2xl font-900 leading-tight', ui.accentText)}>{s.value}</p>
+              <p className={cn('text-xs font-700 mt-1', ui.textDim)}>{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div
-        className="mx-5 mb-5 rounded-2xl p-4"
-        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+      <div className={cn('mx-5 mb-5 rounded-2xl p-4', ui.card)}>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-800 tracking-widest uppercase" style={{ color: '#555' }}>
+          <p className={cn('text-xs font-800 tracking-widest uppercase', ui.sectionLabel)}>
             Volume / semaine
           </p>
-          <p className="text-xs font-700" style={{ color: accent }}>
-            5 sem.
-          </p>
+          <p className={cn('text-xs font-700', ui.accentText)}>5 sem.</p>
         </div>
         <div className="flex items-end gap-1.5 h-14">
           {sparkData.map((val, i) => (
-            <div key={i} className="flex-1">
+            <div key={`spark-${val}-${i}`} className="flex-1">
               <div
-                className="w-full rounded-t-md"
+                className={cn(
+                  'w-full rounded-t-md',
+                  ui.sparkBar,
+                  i === sparkData.length - 1 ? ui.sparkBarActive : ui.sparkBarMuted,
+                )}
                 style={{
-                  backgroundColor: i === sparkData.length - 1 ? accent : withAlpha(accent, 0.2),
                   height: `${Math.round((val / sparkMax) * 100)}%`,
-                  minHeight: 4,
                 }}
               />
             </div>
@@ -153,18 +146,18 @@ export function HomeScreen({
           {['S33', 'S34', 'S35', 'S36', 'S37'].map((s, i) => (
             <p
               key={s}
-              className="flex-1 text-center text-xs font-700"
-              style={{ color: i === 4 ? accent : '#333' }}>
+              className={cn(
+                'flex-1 text-center text-xs font-700',
+                i === 4 ? ui.weekLabelActive : ui.weekLabelInactive,
+              )}>
               {s}
             </p>
           ))}
         </div>
       </div>
 
-      <div
-        className="mx-5 mb-5 rounded-2xl p-4"
-        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-        <p className="text-xs font-800 tracking-widest uppercase mb-4" style={{ color: '#555' }}>
+      <div className={cn('mx-5 mb-5 rounded-2xl p-4', ui.card)}>
+        <p className={cn('text-xs font-800 tracking-widest uppercase mb-4', ui.sectionLabel)}>
           Parties du corps travaillées
         </p>
         <div className="space-y-3">
@@ -175,20 +168,23 @@ export function HomeScreen({
             return (
               <div key={partId}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-800" style={{ color: count > 0 ? '#ccc' : '#444' }}>
+                  <span className={cn('text-sm font-800', count > 0 ? ui.textSoft : ui.textFaint)}>
                     {group?.name ?? partId}
                   </span>
                   <span
-                    className="text-xs font-900"
-                    style={{ color: count > 0 ? group?.color : '#333' }}>
+                    className={cn('text-xs font-900', count <= 0 && ui.textGhost)}
+                    style={count > 0 ? { color: group?.color } : undefined}>
                     {count > 0 ? `${count}×` : '—'}
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full" style={{ backgroundColor: '#2a2a2a' }}>
+                <div className={cn('h-1.5 rounded-full', ui.progressTrack)}>
                   {count > 0 && (
                     <div
                       className="h-full rounded-full"
-                      style={{ backgroundColor: group?.color, width: `${pct}%` }}
+                      style={{
+                        backgroundColor: group?.color,
+                        width: `${pct}%`,
+                      }}
                     />
                   )}
                 </div>
@@ -199,8 +195,10 @@ export function HomeScreen({
       </div>
 
       <button
-        className="mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
+        className={cn(
+          'mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95',
+          ui.ghostButton,
+        )}
         onClick={onGoToWeekly}>
         Voir le programme complet →
       </button>

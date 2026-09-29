@@ -225,7 +225,6 @@ export function WeeklyScreen({
 
       {assignIndex !== null && (
         <DayAssignSheet
-          accent={accent}
           circuits={circuits}
           day={currentWeekDays[assignIndex]}
           dayIndex={assignIndex}

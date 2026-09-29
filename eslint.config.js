@@ -4,7 +4,14 @@ import tseslint from 'typescript-eslint';
 export default [
   // Ignorer les fichiers publics et autres dossiers de build en premier
   {
-    ignores: ['dist/**', 'node_modules/**', 'build/**', 'public/**', '**/*.json'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'build/**',
+      'public/**',
+      '**/*.json',
+      '**/*.module.scss.d.ts',
+    ],
   },
   // Exclure les fichiers JSON restants des règles TypeScript
   {

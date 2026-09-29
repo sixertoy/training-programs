@@ -1,0 +1,37 @@
+@use '../../styles/palette' as *;
+
+.sheet {
+  max-height: 75%;
+}
+
+.circuitList {
+  max-height: 220px;
+}
+
+.restButtonActive {
+  background-color: $surface-secondary;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.restButtonDefault {
+  background-color: $surface-card;
+  border: 1px solid $border-default;
+}
+
+.selectableRow {
+  background-color: $surface-card;
+  border: 1px solid $border-default;
+}
+
+.selectableRowSelected {
+  background-color: color-mix(in srgb, var(--row-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--row-color) 40%, transparent);
+}
+
+.colorDot {
+  background-color: var(--row-color);
+}
+
+.checkBadge {
+  background-color: var(--row-color);
+}

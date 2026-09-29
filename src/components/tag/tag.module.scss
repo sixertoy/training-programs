@@ -1,0 +1,5 @@
+.tag {
+  background-color: color-mix(in srgb, var(--tag-color) 19%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tag-color) 31%, transparent);
+  color: var(--tag-color);
+}

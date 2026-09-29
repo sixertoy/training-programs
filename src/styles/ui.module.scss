@@ -1,0 +1,165 @@
+@use './palette' as *;
+
+.sectionLabel {
+  color: $text-dim;
+}
+
+.accentText {
+  color: var(--accent);
+}
+
+.accentBg {
+  background-color: var(--accent);
+}
+
+.textOnAccent {
+  color: $text-inverse;
+}
+
+.textMuted {
+  color: $text-muted;
+}
+
+.textSubtle {
+  color: $text-subtle;
+}
+
+.textDim {
+  color: $text-dim;
+}
+
+.textBody {
+  color: $text-body;
+}
+
+.textSoft {
+  color: $text-soft;
+}
+
+.textFaint {
+  color: $text-faint;
+}
+
+.textGhost {
+  color: $text-ghost;
+}
+
+.card {
+  background-color: $surface-card;
+  border: 1px solid $border-default;
+}
+
+.cardGradient {
+  background: linear-gradient(135deg, $surface-card 0%, $surface-deep 100%);
+}
+
+.accentBorderSoft {
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.accentTint13 {
+  background-color: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent);
+}
+
+.accentTint12 {
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.accentTint20Fill {
+  background-color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.iconButton {
+  background-color: $surface-card;
+  border: 1px solid $border-default;
+  color: $text-muted;
+}
+
+.ghostButton {
+  composes: card;
+  color: $text-muted;
+}
+
+.roundButtonSecondary {
+  background-color: $surface-secondary;
+  color: $text-subtle;
+}
+
+.progressTrack {
+  background-color: $surface-secondary;
+}
+
+.overlay {
+  background-color: $overlay-backdrop;
+  z-index: 50;
+}
+
+.sheetPanel {
+  background-color: $surface-elevated;
+  border: 1px solid $border-default;
+}
+
+.playIconOffset {
+  margin-left: 2px;
+}
+
+.sparkBar {
+  min-height: 4px;
+}
+
+.sparkBarActive {
+  background-color: var(--accent);
+}
+
+.sparkBarMuted {
+  background-color: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.weekLabelActive {
+  color: var(--accent);
+}
+
+.weekLabelInactive {
+  color: $text-ghost;
+}
+
+.nextSessionCard {
+  composes: cardGradient accentBorderSoft;
+}
+
+.accentDashedAction {
+  background-color: $surface-card;
+  border: 1px dashed color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--accent);
+}
+
+.accentCheckBadge {
+  background-color: var(--accent);
+}
+
+.primaryFab {
+  composes: accentBg textOnAccent;
+}
+
+.chipMuted {
+  background-color: $surface-secondary;
+  color: $text-body;
+}
+
+.itemTintBg {
+  background-color: color-mix(in srgb, var(--item-color) 12%, transparent);
+}
+
+.itemTintText {
+  color: var(--item-color);
+}
+
+.itemColorBar {
+  background-color: var(--item-color);
+}
+
+.itemTintButton {
+  composes: itemTintBg itemTintText;
+}

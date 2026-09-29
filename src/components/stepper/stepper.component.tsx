@@ -1,4 +1,7 @@
+import cn from 'classnames';
 import { useCallback } from 'react';
+
+import styles from './stepper.module.scss';
 
 interface StepperProps {
   min?: number;
@@ -20,20 +23,22 @@ export function Stepper({ min = 0, onChange, step = 5, unit, value }: StepperPro
   return (
     <div className="flex items-center gap-2">
       <button
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
-        style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90',
+          styles.control,
+        )}
         onClick={handleMinus}>
         −
       </button>
-      <span className="font-900 text-base text-center" style={{ minWidth: 52 }}>
+      <span className={cn('font-900 text-base text-center', styles.value)}>
         {value}
-        <span className="text-xs font-700 ml-1" style={{ color: '#555' }}>
-          {unit}
-        </span>
+        <span className={cn('text-xs font-700 ml-1', styles.unit)}>{unit}</span>
       </span>
       <button
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
-        style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90',
+          styles.control,
+        )}
         onClick={handlePlus}>
         +
       </button>

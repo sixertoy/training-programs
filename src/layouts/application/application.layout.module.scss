@@ -1,0 +1,12 @@
+@use '../../styles/palette' as *;
+
+.root {
+  background-color: $surface-outer;
+}
+
+.shell {
+  background-color: $surface-app;
+  box-shadow: $shadow-app-shell;
+  height: min(100vh, 844px);
+  width: min(100vw, 390px);
+}
