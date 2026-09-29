@@ -36,3 +36,11 @@ html, body, #root {
 }
 
 scrollbar-width: none;
+
+body {
+  background-image: url('./assets/images/frame_iphone-17.png');
+  background-size: 390px 844px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #383838;
+}

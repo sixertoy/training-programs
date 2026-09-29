@@ -1,12 +1,12 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import checker from 'vite-plugin-checker';
+import { checker } from 'vite-plugin-checker';
 import removeConsole from 'vite-plugin-remove-console';
 import sassDts from 'vite-plugin-sass-dts';
 
 // https://vite.dev/config/
-export default defineConfig({
+export const config = defineConfig({
   build: {
     outDir: 'build',
     sourcemap: true,
@@ -31,3 +31,6 @@ export default defineConfig({
     strictPort: true,
   },
 });
+
+// eslint-disable-next-line import/no-default-export
+export default config;

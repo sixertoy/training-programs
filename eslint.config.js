@@ -10,6 +10,7 @@ export default [
       'build/**',
       'public/**',
       '**/*.json',
+      '**/*.module.d.scss.ts',
       '**/*.module.scss.d.ts',
     ],
   },
