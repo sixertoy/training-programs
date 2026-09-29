@@ -12,6 +12,14 @@ export enum AccentColor {
   SAGE = '#A8E6CF',
   SEAFOAM = '#88D8B0',
   BLUSH = '#FF9A9E',
+  FUCHSIA = '#E879F9',
+  PINK = '#F472B6',
+  CYAN = '#22D3EE',
+  ROSE = '#FB7185',
+  LEAF = '#8BCF00',
+  GOLD = '#FFD93D',
+  TANGERINE = '#FF9A3C',
+  SCARLET = '#FF4757',
 }
 
 export const ACCENT_PALETTE: string[] = Object.values(AccentColor);

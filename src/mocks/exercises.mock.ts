@@ -1,46 +1,47 @@
+import { CardColor } from '../enums';
 import type { Exercise } from '../interfaces/exercise.interface';
 
 export const initialExercises: Exercise[] = [
   {
-    color: '#FF6B35',
+    color: CardColor.ORANGE,
     description: 'Exercice full-body explosif enchaînant squat, pompe et saut vertical.',
     id: '1',
     name: 'Burpees',
-    tags: ['Cardio', 'Jambes', 'Poitrine'],
+    tags: ['15', '14', '1'],
   },
   {
-    color: '#7B2D8B',
+    color: CardColor.PURPLE,
     description: 'Tirage vertical en suspension à la barre, travail du dos et biceps.',
     id: '2',
     name: 'Tractions',
-    tags: ['Dos', 'Bras'],
+    tags: ['10', '6'],
   },
   {
-    color: '#1A936F',
+    color: CardColor.GREEN,
     description: 'Descente en squat profond avec impulsion explosive vers le haut.',
     id: '3',
     name: 'Squat sauté',
-    tags: ['Jambes', 'Fessiers', 'Cardio'],
+    tags: ['15', '9'],
   },
   {
-    color: '#C62A47',
+    color: CardColor.CRIMSON,
     description: 'Poussée verticale avec haltères ou barre depuis les épaules.',
     id: '4',
     name: 'Développé militaire',
-    tags: ['Épaules', 'Bras'],
+    tags: ['7', '17'],
   },
   {
-    color: '#2E86AB',
+    color: CardColor.BLUE,
     description: 'Maintien du corps en position rigide, renforcement profond des abdos.',
     id: '5',
     name: 'Gainage planche',
-    tags: ['Abdos'],
+    tags: ['1'],
   },
   {
-    color: '#F18F01',
+    color: CardColor.AMBER,
     description: 'Pas en avant avec descente du genou arrière, travail unilatéral.',
     id: '6',
     name: 'Fentes marchées',
-    tags: ['Jambes', 'Fessiers'],
+    tags: ['15', '9'],
   },
 ];

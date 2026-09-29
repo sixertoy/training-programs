@@ -1,3 +1,4 @@
+import { SvgIcon } from '../../components/svg-icon';
 import back from './back.svg?raw';
 import calendar from './calendar.svg?raw';
 import chevronLeft from './chevron-left.svg?raw';
@@ -11,10 +12,6 @@ import pause from './pause.svg?raw';
 import play from './play.svg?raw';
 import plus from './plus.svg?raw';
 import skip from './skip.svg?raw';
-
-function SvgIcon({ svg }: { svg: string }) {
-  return <span dangerouslySetInnerHTML={{ __html: svg }} style={{ display: 'contents' }} />;
-}
 
 export const IconBack = () => <SvgIcon svg={back} />;
 export const IconCalendar = () => <SvgIcon svg={calendar} />;

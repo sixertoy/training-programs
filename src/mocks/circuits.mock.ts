@@ -1,8 +1,9 @@
+import { CardColor } from '../enums';
 import type { Circuit } from '../interfaces/circuit.interface';
 
 export const initialCircuits: Circuit[] = [
   {
-    color: '#FF6B35',
+    color: CardColor.ORANGE,
     cycles: 3,
     exerciseIds: ['4', '2', '1'],
     exerciseTime: 45,
@@ -15,7 +16,7 @@ export const initialCircuits: Circuit[] = [
     rounds: 4,
   },
   {
-    color: '#C62A47',
+    color: CardColor.CRIMSON,
     cycles: 4,
     exerciseIds: ['1', '3', '6'],
     exerciseTime: 30,
@@ -28,7 +29,7 @@ export const initialCircuits: Circuit[] = [
     rounds: 6,
   },
   {
-    color: '#1A936F',
+    color: CardColor.GREEN,
     cycles: 3,
     exerciseIds: ['1', '2', '3', '4', '5', '6'],
     exerciseTime: 40,

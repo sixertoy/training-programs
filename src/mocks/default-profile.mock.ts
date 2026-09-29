@@ -1,7 +1,8 @@
+import { AccentColor } from '../enums';
 import type { UserProfile } from '../interfaces/user-profile.interface';
 
 export const defaultProfile: UserProfile = {
-  accentColor: '#cbff47',
+  accentColor: AccentColor.LIME,
   age: 28,
   firstName: 'Alexandre',
   gender: 'homme',

@@ -1,3 +1,4 @@
+import { AccentColor } from '../enums';
 import type { HealthStats } from '../interfaces/health-stats.interface';
 import type { HealthStatsInput } from '../interfaces/health-stats-input.interface';
 
@@ -8,11 +9,11 @@ function getBmiCategory(bmi: number): string {
   return 'Obésité';
 }
 
-function getBmiColor(bmi: number): string {
-  if (bmi < 18.5) return '#4ECDC4';
-  if (bmi < 25) return '#cbff47';
-  if (bmi < 30) return '#FFE66D';
-  return '#FF6B6B';
+function getBmiColor(bmi: number): AccentColor {
+  if (bmi < 18.5) return AccentColor.TEAL;
+  if (bmi < 25) return AccentColor.LIME;
+  if (bmi < 30) return AccentColor.YELLOW;
+  return AccentColor.CORAL;
 }
 
 export function computeHealthStats(profile: HealthStatsInput): HealthStats {

@@ -5,6 +5,7 @@ export type { Exercise } from './exercise.interface';
 export type { GlobalStats } from './global-stats.interface';
 export type { HealthStats } from './health-stats.interface';
 export type { HealthStatsInput } from './health-stats-input.interface';
+export type { MuscleGroup } from './muscle-group.interface';
 export type { NextSession } from './next-session.interface';
 export type { NextSessionDay } from './next-session-day.interface';
 export type { StatsDay } from './stats-day.interface';

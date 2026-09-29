@@ -1,0 +1,104 @@
+[
+  {
+    "id": "1",
+    "key": "ABS",
+    "name": "Abdominaux",
+    "color": "SALMON"
+  },
+  {
+    "id": "2",
+    "key": "ABDUCTORS",
+    "name": "Abducteurs de la hanche",
+    "color": "FUCHSIA"
+  },
+  {
+    "id": "3",
+    "key": "ADDUCTORS",
+    "name": "Adducteurs de la hanche",
+    "color": "PINK"
+  },
+  {
+    "id": "4",
+    "key": "FOREARM",
+    "name": "Avant-bras",
+    "color": "SAGE"
+  },
+  {
+    "id": "5",
+    "key": "LOWER_BACK",
+    "name": "Bas du dos",
+    "color": "TEAL"
+  },
+  {
+    "id": "6",
+    "key": "BICEPS",
+    "name": "Biceps",
+    "color": "ORANGE"
+  },
+  {
+    "id": "7",
+    "key": "SHOULDERS",
+    "name": "Épaules",
+    "color": "CORAL"
+  },
+  {
+    "id": "8",
+    "key": "HIPS",
+    "name": "Fléchisseurs des hanches",
+    "color": "CYAN"
+  },
+  {
+    "id": "9",
+    "key": "GLUTES",
+    "name": "Glutéaux",
+    "color": "BLUSH"
+  },
+  {
+    "id": "10",
+    "key": "LATS",
+    "name": "Grands dorsaux",
+    "color": "SKY"
+  },
+  {
+    "id": "11",
+    "key": "HAMSTRINGS",
+    "name": "Ischio-jambiers",
+    "color": "AMBER"
+  },
+  {
+    "id": "12",
+    "key": "CALVES",
+    "name": "Mollets",
+    "color": "MINT"
+  },
+  {
+    "id": "13",
+    "key": "OBLIQUES",
+    "name": "Obliques",
+    "color": "ROSE"
+  },
+  {
+    "id": "14",
+    "key": "CHEST",
+    "name": "Poitrine",
+    "color": "SEAFOAM"
+  },
+  {
+    "id": "15",
+    "key": "QUADS",
+    "name": "Quadricepts",
+    "color": "YELLOW"
+  },
+  {
+    "id": "16",
+    "key": "TRAPS",
+    "name": "Trapèzes",
+    "color": "LIME"
+  },
+  {
+    "id": "17",
+    "key": "TRICEPS",
+    "name": "Triceps",
+    "color": "VIOLET"
+  }
+]
