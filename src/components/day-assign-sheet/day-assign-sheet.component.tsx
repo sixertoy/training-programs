@@ -1,7 +1,9 @@
 import cn from 'classnames';
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router';
 
 import { IconCouch, IconPlus } from '../../assets/icons';
+import { resolveRoutePath } from '../../config';
 import { circuitDurationMin } from '../../helpers';
 import type { Circuit, DayProgram } from '../../interfaces';
 import { DAY_DATES, DAY_LABELS } from '../../mocks';
@@ -13,7 +15,6 @@ interface DayAssignSheetProps {
   day: DayProgram;
   dayIndex: number;
   onAssign: (d: DayProgram) => void;
-  onCreateCircuit: () => void;
   onClose: () => void;
 }
 
@@ -39,7 +40,6 @@ export function DayAssignSheet({
   dayIndex,
   onAssign,
   onClose,
-  onCreateCircuit,
 }: DayAssignSheetProps) {
   return (
     <div
@@ -135,14 +135,14 @@ export function DayAssignSheet({
           })}
         </div>
 
-        <button
+        <Link
           className={cn(
-            'w-full mt-3 rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95',
+            'w-full mt-3 rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95 no-underline',
             ui.accentDashedAction,
           )}
-          onClick={onCreateCircuit}>
+          to={resolveRoutePath('create-circuit')}>
           <IconPlus /> Nouveau circuit
-        </button>
+        </Link>
       </div>
     </div>
   );

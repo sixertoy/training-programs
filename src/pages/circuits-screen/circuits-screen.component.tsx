@@ -1,7 +1,9 @@
 import cn from 'classnames';
 import type { CSSProperties } from 'react';
+import { Link } from 'react-router';
 
 import { IconPlus } from '../../assets/icons';
+import { resolveRoutePath } from '../../config';
 import { circuitDurationMin } from '../../helpers';
 import type { Circuit, Exercise } from '../../interfaces';
 import ui from '../../styles/ui.module.scss';
@@ -9,11 +11,9 @@ import ui from '../../styles/ui.module.scss';
 export interface CircuitsScreenProps {
   circuits: Circuit[];
   exercises: Exercise[];
-  onCreateNew: () => void;
-  onEdit: (id: string) => void;
 }
 
-export function CircuitsScreen({ circuits, exercises, onCreateNew, onEdit }: CircuitsScreenProps) {
+export function CircuitsScreen({ circuits, exercises }: CircuitsScreenProps) {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-5 pt-8 pb-4 flex items-end justify-between">
@@ -23,25 +23,25 @@ export function CircuitsScreen({ circuits, exercises, onCreateNew, onEdit }: Cir
             {circuits.length} circuit{circuits.length > 1 ? 's' : ''}
           </p>
         </div>
-        <button
+        <Link
           className={cn(
-            'w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90',
+            'w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90 no-underline',
             ui.primaryFab,
           )}
-          onClick={onCreateNew}>
+          to={resolveRoutePath('create-circuit')}>
           <IconPlus />
-        </button>
+        </Link>
       </div>
       <div className="px-5 space-y-3 pb-6">
         {circuits.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <p className="text-5xl">💪</p>
             <p className={cn('font-800 text-center', ui.textDim)}>Aucun circuit encore</p>
-            <button
-              className={cn('px-6 py-3.5 rounded-2xl font-900', ui.primaryFab)}
-              onClick={onCreateNew}>
+            <Link
+              className={cn('px-6 py-3.5 rounded-2xl font-900 no-underline', ui.primaryFab)}
+              to={resolveRoutePath('create-circuit')}>
               Créer mon premier circuit
-            </button>
+            </Link>
           </div>
         )}
         {circuits.map((c) => {
@@ -61,16 +61,14 @@ export function CircuitsScreen({ circuits, exercises, onCreateNew, onEdit }: Cir
                       {c.cycles} cycles · {c.rounds} rounds · ~{circuitDurationMin(c)} min
                     </p>
                   </div>
-                  <button
+                  <Link
                     className={cn(
-                      'text-xs font-800 px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0',
+                      'text-xs font-800 px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0 no-underline',
                       ui.itemTintButton,
                     )}
-                    onClick={() => {
-                      onEdit(c.id);
-                    }}>
+                    to={resolveRoutePath('edit-circuit', { circuitId: c.id })}>
                     Éditer
-                  </button>
+                  </Link>
                 </div>
 
                 <div className="flex gap-2 flex-wrap mb-3">

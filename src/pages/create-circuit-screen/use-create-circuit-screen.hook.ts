@@ -1,10 +1,11 @@
-import { useNavigate, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import { useApp } from '../../contexts';
+import { useGoBack } from '../../hooks';
 import type { CreateCircuitScreenProps } from './create-circuit-screen.component';
 
 export function useCreateCircuitScreen(): CreateCircuitScreenProps {
-  const navigate = useNavigate();
+  const goBack = useGoBack();
   const { circuitId } = useParams();
   const { accent, circuits, exercises, saveCircuit } = useApp();
 
@@ -14,9 +15,7 @@ export function useCreateCircuitScreen(): CreateCircuitScreenProps {
     accent,
     exercises,
     initial,
-    onBack: () => {
-      void navigate(-1);
-    },
+    onBack: goBack,
     onSave: (circuit) => {
       saveCircuit(circuit);
     },

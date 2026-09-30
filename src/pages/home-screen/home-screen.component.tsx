@@ -1,6 +1,8 @@
 import cn from 'classnames';
+import { Link } from 'react-router';
 
 import { IconGear, IconPlay } from '../../assets/icons';
+import { resolveRoutePath } from '../../config';
 import type { NextSession, UserProfile } from '../../interfaces';
 import { findMuscleGroup } from '../../mocks';
 import ui from '../../styles/ui.module.scss';
@@ -9,9 +11,6 @@ export interface HomeScreenProps {
   bodyPartCount: Record<string, number>;
   maxCount: number;
   nextSession: NextSession | null;
-  onGoToProfile: () => void;
-  onGoToTimer: () => void;
-  onGoToWeekly: () => void;
   profile: UserProfile;
   sortedParts: string[];
   sparkData: number[];
@@ -26,9 +25,6 @@ export function HomeScreen({
   bodyPartCount,
   maxCount,
   nextSession,
-  onGoToProfile,
-  onGoToTimer,
-  onGoToWeekly,
   profile,
   sortedParts,
   sparkData,
@@ -50,14 +46,14 @@ export function HomeScreen({
             {profile.firstName || 'Athlète'} 👊
           </p>
         </div>
-        <button
+        <Link
           className={cn(
-            'w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90',
+            'w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90 no-underline',
             ui.iconButton,
           )}
-          onClick={onGoToProfile}>
+          to={resolveRoutePath('profile')}>
           <IconGear />
-        </button>
+        </Link>
       </div>
 
       {nextSession && (
@@ -83,18 +79,18 @@ export function HomeScreen({
                 {nextSession.exercises} exercices
               </p>
             </div>
-            <button
+            <Link
               className={cn(
-                'w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95',
+                'w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95 no-underline',
                 ui.accentBg,
               )}
-              onClick={onGoToTimer}>
+              to={resolveRoutePath('timer')}>
               <span className={ui.textOnAccent}>
                 <span className={ui.playIconOffset}>
                   <IconPlay />
                 </span>
               </span>
-            </button>
+            </Link>
           </div>
         </div>
       )}
@@ -194,14 +190,14 @@ export function HomeScreen({
         </div>
       </div>
 
-      <button
+      <Link
         className={cn(
-          'mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95',
+          'mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95 no-underline',
           ui.ghostButton,
         )}
-        onClick={onGoToWeekly}>
+        to={resolveRoutePath('weekly')}>
         Voir le programme complet →
-      </button>
+      </Link>
     </div>
   );
 }

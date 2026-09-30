@@ -1,18 +1,18 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 
 import { IconChevronLeft, IconChevronRight, IconCouch, IconPlay } from '../../assets/icons';
+import { DayAssignSheet } from '../../components/day-assign-sheet';
+import { resolveRoutePath } from '../../config';
 import { TODAY_INDEX } from '../../constants/program.constants';
 import { withAlpha } from '../../helpers';
 import type { Circuit, DayProgram } from '../../interfaces';
 import { WEEK_HISTORY } from '../../mocks';
-import { DayAssignSheet } from '../../components/day-assign-sheet';
 
 export interface WeeklyScreenProps {
   accent: string;
   circuits: Circuit[];
   currentWeekDays: DayProgram[];
-  onCreateCircuit: () => void;
-  onStartTimer: () => void;
   onUpdateDay: (i: number, d: DayProgram) => void;
 }
 
@@ -20,8 +20,6 @@ export function WeeklyScreen({
   accent,
   circuits,
   currentWeekDays,
-  onCreateCircuit,
-  onStartTimer,
   onUpdateDay,
 }: WeeklyScreenProps) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -127,14 +125,14 @@ export function WeeklyScreen({
                   {todayCard.exercises} exercices
                 </p>
               </div>
-              <button
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95"
+              <Link
+                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 no-underline"
                 style={{ backgroundColor: '#0d0d0d' }}
-                onClick={onStartTimer}>
+                to={resolveRoutePath('timer')}>
                 <span style={{ color: accent, marginLeft: 3 }}>
                   <IconPlay />
                 </span>
-              </button>
+              </Link>
             </div>
           </div>
         )}
@@ -234,10 +232,6 @@ export function WeeklyScreen({
           }}
           onClose={() => {
             setAssignIndex(null);
-          }}
-          onCreateCircuit={() => {
-            setAssignIndex(null);
-            onCreateCircuit();
           }}
         />
       )}
