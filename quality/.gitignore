@@ -3,4 +3,6 @@ build
 coverage
 playwright-report
 test-results
+blob-report
+.playwright
 *.log

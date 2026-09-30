@@ -9,6 +9,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist", "build"]
+  "include": ["**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules", "dist", "build", "playwright-report", "test-results"]
 }

@@ -7,6 +7,12 @@
     "lint": "eslint src --no-error-on-unmatched-pattern",
     "lint:fix": "eslint src --fix --no-error-on-unmatched-pattern",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:snapshots": "playwright test",
+    "test:snapshots:update": "playwright test --update-snapshots",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }

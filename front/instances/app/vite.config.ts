@@ -17,6 +17,7 @@ export const config = defineConfig({
     removeConsole(),
     sassDts(),
     checker({
+      enableBuild: false,
       eslint: {
         dev: { logLevel: ['error'] },
         lintCommand: 'eslint .',

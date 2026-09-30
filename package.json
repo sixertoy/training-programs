@@ -83,6 +83,9 @@
     "format:back": "yarn workspace @training-programs/back format",
     "format:quality": "yarn workspace @training-programs/quality format",
     "format:check": "yarn workspace @training-programs/front format:check && yarn workspace @training-programs/back format:check && yarn workspace @training-programs/quality format:check",
-    "cleanup": "rm -rf node_modules front/instances/app/build front/instances/app/dist"
+    "cleanup": "rm -rf node_modules front/instances/app/build front/instances/app/dist",
+    "test:snapshots": "yarn workspace @training-programs/quality test:snapshots",
+    "test:snapshots:update": "yarn workspace @training-programs/quality test:snapshots:update",
+    "playwright:install": "yarn workspace @training-programs/quality playwright:install"
   }
 }
