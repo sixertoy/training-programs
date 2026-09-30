@@ -10,11 +10,14 @@ export function ApplicationLayout() {
 
   return (
     <div className={`flex justify-center items-center min-h-screen ${styles.root}`}>
-      <div className={`flex flex-col overflow-hidden relative ${styles.shell}`}>
-        <div className="flex-1 overflow-hidden relative">
-          <Outlet />
+      <div className={styles.device} data-testid="device-frame">
+        <div className={styles.shell} data-testid="app-shell">
+          <div className={styles.content}>
+            <Outlet />
+          </div>
+          {showNav && <BottomNav />}
         </div>
-        {showNav && <BottomNav />}
+        <img alt="" aria-hidden="true" className={styles.frame} src="/frame_iphone-17.png" />
       </div>
     </div>
   );

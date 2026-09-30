@@ -1,12 +1,47 @@
 @use '../../styles/palette' as *;
 
+// Frame asset: public/frame_iphone-17.png (1310×2710)
+// Screen hole insets measured from transparent alpha channel.
 .root {
-  background-color: $surface-outer;
+  background-color: #383838;
+  min-height: 100%;
+}
+
+.device {
+  aspect-ratio: 1310 / 2710;
+  position: relative;
+  width: min(92vw, 424px, calc(96vh * 1310 / 2710));
 }
 
 .shell {
   background-color: $surface-app;
-  box-shadow: $shadow-app-shell;
-  height: min(100vh, 844px);
-  width: min(100vw, 390px);
+  border-radius: 2.75rem;
+  bottom: 1.6236162362%;
+  display: flex;
+  flex-direction: column;
+  left: 3.9694656489%;
+  overflow: hidden;
+  position: absolute;
+  right: 3.9694656489%;
+  z-index: 1;
+  padding-top: 73px;
+  top: 1%;
+}
+
+.frame {
+  display: block;
+  height: 100%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
 }
