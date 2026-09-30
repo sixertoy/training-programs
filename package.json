@@ -1,8 +1,19 @@
 {
-  "name": "training-programs",
+  "name": "@training-programs/root",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "workspaces": {
+    "packages": [
+      "configs/*",
+      "front",
+      "front/apps/*",
+      "front/libs/*",
+      "front/instances/*",
+      "back",
+      "quality"
+    ]
+  },
   "dependencies": {
     "@nappr/eslint-config": "^0.2.0",
     "@nappr/nappr-config": "^0.2.2",
@@ -22,6 +33,7 @@
     "@eslint/js": "9.39.4",
     "@eslint/json": "0.14.0",
     "@stylistic/eslint-plugin": "^5.5.0",
+    "@tailwindcss/vite": "^4.0.0",
     "@types/eslint__js": "8.42.3",
     "@types/luxon": "^3.7.1",
     "@types/node": "25.6.0",
@@ -44,28 +56,33 @@
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "globals": "17.6.0",
     "only-allow": "^1.2.1",
+    "oxfmt": "^0.2.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "sass-embedded": "^1.93.3",
+    "tailwindcss": "^4.0.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.46.2",
     "vite": "8.0.10",
     "vite-plugin-checker": "0.13.0",
     "vite-plugin-remove-console": "^2.2.0",
-    "vite-plugin-sass-dts": "^1.3.34",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/vite": "^4.0.0",
-    "oxfmt": "^0.2.0"
+    "vite-plugin-sass-dts": "^1.3.34"
   },
   "scripts": {
     "preinstall": "npx only-allow yarn",
-    "start": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
-    "preview": "vite preview",
-    "cleanup": "rm -rf dist node_modules"
+    "start": "yarn workspace @training-programs/app start",
+    "build": "yarn workspace @training-programs/app build",
+    "preview": "yarn workspace @training-programs/app preview",
+    "lint": "yarn lint:front && yarn lint:back && yarn lint:quality",
+    "lint:front": "yarn workspace @training-programs/front lint",
+    "lint:back": "yarn workspace @training-programs/back lint",
+    "lint:quality": "yarn workspace @training-programs/quality lint",
+    "lint:fix": "yarn workspace @training-programs/front lint:fix && yarn workspace @training-programs/back lint:fix && yarn workspace @training-programs/quality lint:fix",
+    "format": "yarn format:front && yarn format:back && yarn format:quality",
+    "format:front": "yarn workspace @training-programs/front format",
+    "format:back": "yarn workspace @training-programs/back format",
+    "format:quality": "yarn workspace @training-programs/quality format",
+    "format:check": "yarn workspace @training-programs/front format:check && yarn workspace @training-programs/back format:check && yarn workspace @training-programs/quality format:check",
+    "cleanup": "rm -rf node_modules front/instances/app/build front/instances/app/dist"
   }
 }

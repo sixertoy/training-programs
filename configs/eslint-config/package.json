@@ -1,0 +1,15 @@
+{
+  "name": "@training-programs/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.js",
+    "./react": "./react.js",
+    "./node": "./node.js"
+  },
+  "peerDependencies": {
+    "@nappr/eslint-config": "^0.2.0",
+    "typescript-eslint": "^8.46.2"
+  }
+}

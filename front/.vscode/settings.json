@@ -1,0 +1,7 @@
+{
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "eslint.options": { "overrideConfigFile": "eslint.config.js" },
+  "prettier.configPath": ".prettierrc.js",
+  "typescript.tsdk": "../node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}

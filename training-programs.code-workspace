@@ -1,0 +1,11 @@
+{
+  "folders": [
+    { "name": "front", "path": "front" },
+    { "name": "back", "path": "back" },
+    { "name": "quality", "path": "quality" },
+    { "name": "root", "path": "." }
+  ],
+  "settings": {
+    "eslint.workingDirectories": [{ "mode": "auto" }]
+  }
+}

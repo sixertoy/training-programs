@@ -1,0 +1,12 @@
+{
+  "name": "@training-programs/quality",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint src --fix --no-error-on-unmatched-pattern",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
