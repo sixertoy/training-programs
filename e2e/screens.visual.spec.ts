@@ -9,6 +9,12 @@ async function openApp(page: import('@playwright/test').Page) {
   await expect(page.getByText('Bonjour,')).toBeVisible();
 }
 
+async function openProgramme(page: import('@playwright/test').Page) {
+  await openApp(page);
+  await page.getByRole('button', { name: 'Programme', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Programme' })).toBeVisible();
+}
+
 test.describe('Visual snapshots — main screens', () => {
   test('Accueil', async ({ page }) => {
     await openApp(page);
@@ -16,22 +22,34 @@ test.describe('Visual snapshots — main screens', () => {
   });
 
   test('Programme', async ({ page }) => {
-    await openApp(page);
-    await page.getByRole('button', { name: 'Programme', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Programme' })).toBeVisible();
+    await openProgramme(page);
     await expect(page).toHaveScreenshot('programme.png');
   });
 
-  test('Programme — assignation jour', async ({ page }) => {
-    await openApp(page);
-    await page.getByRole('button', { name: 'Programme', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Programme' })).toBeVisible();
-    // Aujourd'hui = Lundi (horloge figée) → Vendredi (Full Body) est assignable
-    // p.truncate = ligne du programme (pas le h2 "Aujourd'hui")
-    await page.locator('p.truncate', { hasText: 'Full Body' }).click();
-    await expect(page.getByText('Vendredi')).toBeVisible();
+  test('Programme — assignation aujourd’hui', async ({ page }) => {
+    await openProgramme(page);
+    await page.getByText('LUN', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
-    await expect(page).toHaveScreenshot('programme-assign-day.png');
+    await expect(page).toHaveScreenshot('programme-assign-today.png');
+  });
+
+  test('Programme — assignation futur', async ({ page }) => {
+    await openProgramme(page);
+    await page.getByRole('button', { name: 'Semaine suivante' }).click();
+    await expect(page.getByText('Repos').first()).toBeVisible();
+    await page.getByText('LUN', { exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
+    await expect(page).toHaveScreenshot('programme-assign-future.png');
+  });
+
+  test('Programme — confirmation passé', async ({ page }) => {
+    await openProgramme(page);
+    await page.getByRole('button', { name: 'Semaine précédente' }).click();
+    await page.locator('p.truncate', { hasText: 'Push Day' }).first().click();
+    await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
+    await page.getByRole('button', { name: 'Repos' }).click();
+    await expect(page.getByText('Confirmer la modification')).toBeVisible();
+    await expect(page).toHaveScreenshot('programme-assign-past-confirm.png');
   });
 
   test('Circuits', async ({ page }) => {

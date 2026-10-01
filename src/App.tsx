@@ -7,6 +7,9 @@ import {
   getDay,
   getISOWeek,
   getISOWeekYear,
+  isBefore,
+  isSameDay,
+  startOfDay,
   startOfWeek,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -329,6 +332,29 @@ function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undef
   const isoWeek = getISOWeek(weekStart);
   const year = getISOWeekYear(weekStart);
   return history.find((week) => week.isoWeek === isoWeek && week.year === year);
+}
+
+function getWeekKey(weekStart: Date): string {
+  return `${getISOWeekYear(weekStart)}-W${getISOWeek(weekStart)}`;
+}
+
+function resolveWeekDays(
+  weekStart: Date,
+  weekPrograms: Record<string, DayProgram[]>,
+): DayProgram[] {
+  const key = getWeekKey(weekStart);
+  if (weekPrograms[key]) return weekPrograms[key];
+  return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? buildEmptyWeekDays();
+}
+
+function isPastCalendarDay(dayDate: Date, now: Date = new Date()): boolean {
+  return isBefore(startOfDay(dayDate), startOfDay(now));
+}
+
+function isSameAssignment(a: DayProgram, b: DayProgram): boolean {
+  if (a.isRest && b.isRest) return true;
+  if (a.isRest || b.isRest) return false;
+  return a.circuitId === b.circuitId;
 }
 
 const initialCircuits: Circuit[] = [
@@ -818,6 +844,7 @@ function DayAssignSheet({
   onAssign,
   onClose,
   onCreateCircuit,
+  requiresConfirmation,
 }: {
   dayIndex: number;
   dayDate: Date;
@@ -827,13 +854,34 @@ function DayAssignSheet({
   onCreateCircuit: () => void;
   onClose: () => void;
   accent: string;
+  requiresConfirmation: boolean;
 }) {
+  const [pendingAssign, setPendingAssign] = useState<DayProgram | null>(null);
+
+  const requestAssign = (next: DayProgram) => {
+    if (isSameAssignment(day, next)) {
+      onClose();
+      return;
+    }
+    if (requiresConfirmation) {
+      setPendingAssign(next);
+      return;
+    }
+    onAssign(next);
+  };
+
+  const pendingLabel = pendingAssign
+    ? pendingAssign.isRest
+      ? 'Repos'
+      : (pendingAssign.circuit ?? 'Circuit')
+    : '';
+
   return (
     <div
       className="absolute inset-0 flex flex-col justify-end"
       style={{ backgroundColor: '#00000085', zIndex: 50 }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !pendingAssign) onClose();
       }}>
       <div
         className="rounded-t-3xl px-5 pt-5 pb-8"
@@ -860,7 +908,7 @@ function DayAssignSheet({
             border: day.isRest ? `1px solid ${withAlpha(accent, 0.3)}` : '1px solid #2a2a2a',
           }}
           onClick={() => {
-            onAssign({
+            requestAssign({
               ...day,
               circuit: undefined,
               circuitId: undefined,
@@ -901,7 +949,7 @@ function DayAssignSheet({
                   border: selected ? `1px solid ${withAlpha(c.color, 0.4)}` : '1px solid #2a2a2a',
                 }}
                 onClick={() => {
-                  onAssign({
+                  requestAssign({
                     ...day,
                     circuit: c.name,
                     circuitId: c.id,
@@ -953,6 +1001,44 @@ function DayAssignSheet({
           <IconPlus /> Nouveau circuit
         </button>
       </div>
+
+      {pendingAssign && (
+        <div
+          className="absolute inset-0 flex items-center justify-center px-6"
+          style={{ backgroundColor: '#000000a0', zIndex: 60 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPendingAssign(null);
+          }}>
+          <div
+            className="w-full rounded-2xl p-5"
+            style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a' }}>
+            <p className="font-900 text-lg mb-2">Confirmer la modification</p>
+            <p className="text-sm font-600 mb-5" style={{ color: '#888' }}>
+              Tu modifies un jour passé (
+              {format(dayDate, 'EEEE dd MMM yyyy', { locale: fr })}
+              ) vers « {pendingLabel} ». Continuer ?
+            </p>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+                style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
+                onClick={() => {
+                  setPendingAssign(null);
+                }}>
+                Annuler
+              </button>
+              <button
+                className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+                style={{ backgroundColor: accent, color: '#0d0d0d' }}
+                onClick={() => {
+                  onAssign(pendingAssign);
+                }}>
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -960,15 +1046,15 @@ function DayAssignSheet({
 function WeeklyScreen({
   accent,
   circuits,
-  currentWeekDays,
   onCreateCircuit,
   onStartTimer,
   onUpdateDay,
+  weekPrograms,
 }: {
   onStartTimer: () => void;
   circuits: Circuit[];
-  currentWeekDays: DayProgram[];
-  onUpdateDay: (i: number, d: DayProgram) => void;
+  weekPrograms: Record<string, DayProgram[]>;
+  onUpdateDay: (weekStart: Date, dayIndex: number, day: DayProgram) => void;
   onCreateCircuit: () => void;
   accent: string;
 }) {
@@ -978,14 +1064,13 @@ function WeeklyScreen({
   const isPastWeek = weekOffset > 0;
   const weekStart = getWeekStart(weekOffset);
   const historyWeek = findHistoryWeek(weekStart, WEEK_HISTORY);
-  const weekDays = isCurrentWeek
-    ? currentWeekDays
-    : (historyWeek?.days ?? buildEmptyWeekDays());
+  const weekDays = resolveWeekDays(weekStart, weekPrograms);
   const weekStats = isPastWeek ? historyWeek?.stats : undefined;
   const weekLabel = formatWeekLabel(weekStart);
   const weekDateRange = formatDateRange(weekStart);
   const dayNumbers = getWeekDayNumbers(weekStart);
-  const todayCard = currentWeekDays[TODAY_INDEX];
+  const todayCard = weekDays[TODAY_INDEX];
+  const assignDayDate = assignIndex !== null ? addDays(weekStart, assignIndex) : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative">
@@ -1001,6 +1086,7 @@ function WeeklyScreen({
           className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
           <button
+            aria-label="Semaine précédente"
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
             onClick={() => {
@@ -1017,6 +1103,7 @@ function WeeklyScreen({
             </p>
           </div>
           <button
+            aria-label="Semaine suivante"
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
             style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
             onClick={() => {
@@ -1048,12 +1135,16 @@ function WeeklyScreen({
           </div>
         )}
 
-        {isCurrentWeek && !todayCard.isRest && (
+        {isCurrentWeek && todayCard && !todayCard.isRest && (
           <div
             className="mx-5 mb-5 rounded-2xl overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
             <div className="p-5 flex items-center justify-between">
-              <div>
+              <button
+                className="text-left flex-1 min-w-0"
+                onClick={() => {
+                  setAssignIndex(TODAY_INDEX);
+                }}>
                 <p
                   className="text-xs font-800 tracking-widest uppercase"
                   style={{ color: '#0d0d0d90' }}>
@@ -1063,13 +1154,16 @@ function WeeklyScreen({
                   {todayCard.circuit}
                 </h2>
                 <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                  {todayCard.exercises} exercices
+                  {todayCard.exercises} exercices · Modifier
                 </p>
-              </div>
+              </button>
               <button
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95"
+                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
                 style={{ backgroundColor: '#0d0d0d' }}
-                onClick={onStartTimer}>
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartTimer();
+                }}>
                 <span style={{ color: accent, marginLeft: 3 }}>
                   <IconPlay />
                 </span>
@@ -1080,20 +1174,21 @@ function WeeklyScreen({
 
         <div className="px-5 space-y-2.5 pb-6">
           {weekDays.map((day, i) => {
-            const isToday = isCurrentWeek && i === TODAY_INDEX;
-            const isDone = isPastWeek && !!historyWeek && !day.isRest;
-            const tappable = isCurrentWeek && i !== TODAY_INDEX;
+            const dayDate = addDays(weekStart, i);
+            const isToday = isSameDay(dayDate, new Date());
+            const isPastDay = isPastCalendarDay(dayDate);
+            const isDone = isPastDay && !day.isRest;
             return (
               <div
                 key={day.day}
-                className={`flex items-center gap-4 rounded-xl px-4 py-3.5 ${tappable ? 'cursor-pointer' : ''}`}
+                className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer"
                 style={{
                   backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
                   border: isToday ? `1px solid ${withAlpha(accent, 0.25)}` : '1px solid #2a2a2a',
-                  opacity: isPastWeek && day.isRest ? 0.45 : 1,
+                  opacity: isPastDay && day.isRest ? 0.45 : 1,
                 }}
                 onClick={() => {
-                  tappable ? setAssignIndex(i) : undefined;
+                  setAssignIndex(i);
                 }}>
                 <div className="w-10 text-center">
                   <p
@@ -1111,7 +1206,7 @@ function WeeklyScreen({
                 {day.isRest ? (
                   <div className="flex items-center gap-3 flex-1">
                     <IconCouch />
-                    <p className="font-700" style={{ color: tappable ? '#555' : '#333' }}>
+                    <p className="font-700" style={{ color: '#555' }}>
                       Repos
                     </p>
                   </div>
@@ -1151,26 +1246,25 @@ function WeeklyScreen({
                     </svg>
                   </span>
                 )}
-                {tappable && (
-                  <span style={{ color: '#333', flexShrink: 0 }}>
-                    <IconChevronRight />
-                  </span>
-                )}
+                <span style={{ color: '#333', flexShrink: 0 }}>
+                  <IconChevronRight />
+                </span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {assignIndex !== null && (
+      {assignIndex !== null && assignDayDate && (
         <DayAssignSheet
           accent={accent}
           circuits={circuits}
-          day={currentWeekDays[assignIndex]}
-          dayDate={addDays(weekStart, assignIndex)}
+          day={weekDays[assignIndex]}
+          dayDate={assignDayDate}
           dayIndex={assignIndex}
+          requiresConfirmation={isPastCalendarDay(assignDayDate)}
           onAssign={(d) => {
-            onUpdateDay(assignIndex, d);
+            onUpdateDay(weekStart, assignIndex, d);
             setAssignIndex(null);
           }}
           onClose={() => {
@@ -2244,7 +2338,10 @@ export default function App() {
   const [prevScreen, setPrevScreen] = useState<Screen>('home');
   const [exercises] = useState<Exercise[]>(initialExercises);
   const [circuits, setCircuits] = useState<Circuit[]>(initialCircuits);
-  const [currentWeekDays, setCurrentWeekDays] = useState<DayProgram[]>(WEEK_HISTORY[0].days);
+  const [weekPrograms, setWeekPrograms] = useState<Record<string, DayProgram[]>>(() => {
+    const currentStart = getWeekStart(0);
+    return { [getWeekKey(currentStart)]: WEEK_HISTORY[0].days };
+  });
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [editingCircuitId, setEditingCircuitId] = useState<string | null>(null);
 
@@ -2272,7 +2369,20 @@ export default function App() {
     });
   };
 
-  const todayCircuit = currentWeekDays[TODAY_INDEX].circuitId
+  const handleUpdateDay = (weekStart: Date, dayIndex: number, day: DayProgram) => {
+    const key = getWeekKey(weekStart);
+    setWeekPrograms((prev) => {
+      const base = prev[key] ?? resolveWeekDays(weekStart, prev);
+      return {
+        ...prev,
+        [key]: base.map((d, idx) => (idx === dayIndex ? day : d)),
+      };
+    });
+  };
+
+  const currentWeekDays = resolveWeekDays(getWeekStart(0), weekPrograms);
+
+  const todayCircuit = currentWeekDays[TODAY_INDEX]?.circuitId
     ? circuits.find((c) => c.id === currentWeekDays[TODAY_INDEX].circuitId)
     : undefined;
 
@@ -2315,16 +2425,14 @@ export default function App() {
             <WeeklyScreen
               accent={accent}
               circuits={circuits}
-              currentWeekDays={currentWeekDays}
+              weekPrograms={weekPrograms}
               onCreateCircuit={() => {
                 goToCreateCircuit();
               }}
               onStartTimer={() => {
                 navigate('timer');
               }}
-              onUpdateDay={(i, d) => {
-                setCurrentWeekDays((prev) => prev.map((day, idx) => (idx === i ? d : day)));
-              }}
+              onUpdateDay={handleUpdateDay}
             />
           )}
           {screen === 'circuits' && (
