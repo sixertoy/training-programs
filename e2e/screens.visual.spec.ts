@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+/** Lundi 8 sept. 2026 — ancré sur les mocks WEEK_HISTORY (semaine ISO 37). */
+const FIXED_NOW = new Date('2026-09-08T12:00:00');
+
 async function openApp(page: import('@playwright/test').Page) {
+  await page.clock.setFixedTime(FIXED_NOW);
   await page.goto('/');
   await expect(page.getByText('Bonjour,')).toBeVisible();
 }

@@ -1,3 +1,15 @@
+import {
+  addDays,
+  addWeeks,
+  eachDayOfInterval,
+  endOfWeek,
+  format,
+  getDay,
+  getISOWeek,
+  getISOWeekYear,
+  startOfWeek,
+} from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useEffect, useRef, useState } from 'react';
 
 import {
@@ -52,7 +64,7 @@ function withAlpha(hex: string, opacity: number): string {
   return hex + alpha;
 }
 
-const DAY_SHORTS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const DAY_SHORTS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
 
 function getNextSession(days: NextSessionDay[], todayIndex: number): NextSession | null {
   for (let i = todayIndex + 1; i < days.length; i += 1) {
@@ -165,8 +177,8 @@ function circuitDurationMin(circuit: CircuitTiming): number {
 }
 
 interface WeekData {
-  label: string;
-  dateRange: string;
+  isoWeek: number;
+  year: number;
   days: DayProgram[];
   stats: { sessions: number; totalMin: number; volume: string };
 }
@@ -271,9 +283,53 @@ const defaultProfile: UserProfile = {
   lastName: '',
   weightKg: 75,
 };
-const DAY_DATES = ['08', '09', '10', '11', '12', '13', '14'];
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 type Gender = 'homme' | 'femme';
+
+const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
+
+function getTodayIndex(date: Date = new Date()): number {
+  return (getDay(date) + 6) % 7;
+}
+
+function getWeekStart(weekOffset: number, from: Date = new Date()): Date {
+  return startOfWeek(addWeeks(from, -weekOffset), WEEK_START_OPTIONS);
+}
+
+function formatWeekLabel(weekStart: Date): string {
+  return `Semaine ${getISOWeek(weekStart)} · ${getISOWeekYear(weekStart)}`;
+}
+
+function formatDateRange(weekStart: Date): string {
+  const weekEnd = endOfWeek(weekStart, WEEK_START_OPTIONS);
+  const sameMonth =
+    format(weekStart, 'MMM', { locale: fr }) === format(weekEnd, 'MMM', { locale: fr });
+  if (sameMonth) {
+    return `${format(weekStart, 'dd', { locale: fr })} – ${format(weekEnd, 'dd MMM', { locale: fr })}`;
+  }
+  return `${format(weekStart, 'dd MMM', { locale: fr })} – ${format(weekEnd, 'dd MMM', { locale: fr })}`;
+}
+
+function getWeekDayNumbers(weekStart: Date): string[] {
+  return eachDayOfInterval({
+    end: endOfWeek(weekStart, WEEK_START_OPTIONS),
+    start: weekStart,
+  }).map((day) => format(day, 'dd'));
+}
+
+function buildEmptyWeekDays(): DayProgram[] {
+  return DAY_LABELS.map((day, i) => ({
+    day,
+    isRest: true,
+    short: DAY_SHORTS[i],
+  }));
+}
+
+function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undefined {
+  const isoWeek = getISOWeek(weekStart);
+  const year = getISOWeekYear(weekStart);
+  return history.find((week) => week.isoWeek === isoWeek && week.year === year);
+}
 
 const initialCircuits: Circuit[] = [
   {
@@ -364,7 +420,6 @@ const initialExercises: Exercise[] = [
 
 const WEEK_HISTORY: WeekData[] = [
   {
-    dateRange: '08 – 14 sept.',
     days: [
       {
         circuit: 'Force Upper',
@@ -402,11 +457,11 @@ const WEEK_HISTORY: WeekData[] = [
       { day: 'Samedi', isRest: true, short: 'SAM' },
       { day: 'Dimanche', isRest: true, short: 'DIM' },
     ],
-    label: 'Semaine 37 · 2026',
+    isoWeek: 37,
     stats: { sessions: 4, totalMin: 187, volume: '12 400 kg' },
+    year: 2026,
   },
   {
-    dateRange: '01 – 07 sept.',
     days: [
       { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
       { day: 'Mardi', isRest: true, short: 'MAR' },
@@ -416,11 +471,11 @@ const WEEK_HISTORY: WeekData[] = [
       { circuit: 'Cardio HIIT', day: 'Samedi', exercises: 4, isRest: false, short: 'SAM' },
       { day: 'Dimanche', isRest: true, short: 'DIM' },
     ],
-    label: 'Semaine 36 · 2026',
+    isoWeek: 36,
     stats: { sessions: 4, totalMin: 162, volume: '10 800 kg' },
+    year: 2026,
   },
   {
-    dateRange: '25 – 31 août',
     days: [
       { day: 'Lundi', isRest: true, short: 'LUN' },
       { circuit: 'Force Upper', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
@@ -430,11 +485,11 @@ const WEEK_HISTORY: WeekData[] = [
       { day: 'Samedi', isRest: true, short: 'SAM' },
       { circuit: 'Mobilité', day: 'Dimanche', exercises: 3, isRest: false, short: 'DIM' },
     ],
-    label: 'Semaine 35 · 2026',
+    isoWeek: 35,
     stats: { sessions: 4, totalMin: 195, volume: '11 200 kg' },
+    year: 2026,
   },
   {
-    dateRange: '18 – 24 août',
     days: [
       { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
       { circuit: 'Pull Day', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
@@ -444,11 +499,11 @@ const WEEK_HISTORY: WeekData[] = [
       { circuit: 'Full Body', day: 'Samedi', exercises: 7, isRest: false, short: 'SAM' },
       { day: 'Dimanche', isRest: true, short: 'DIM' },
     ],
-    label: 'Semaine 34 · 2026',
+    isoWeek: 34,
     stats: { sessions: 4, totalMin: 210, volume: '13 600 kg' },
+    year: 2026,
   },
   {
-    dateRange: '11 – 17 août',
     days: [
       { circuit: 'Cardio HIIT', day: 'Lundi', exercises: 6, isRest: false, short: 'LUN' },
       { day: 'Mardi', isRest: true, short: 'MAR' },
@@ -458,8 +513,9 @@ const WEEK_HISTORY: WeekData[] = [
       { circuit: 'Mobilité', day: 'Samedi', exercises: 3, isRest: false, short: 'SAM' },
       { day: 'Dimanche', isRest: true, short: 'DIM' },
     ],
-    label: 'Semaine 33 · 2026',
+    isoWeek: 33,
     stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
+    year: 2026,
   },
 ];
 
@@ -491,7 +547,7 @@ const CIRCUIT_MUSCLES: Record<string, string[]> = {
   push_day: ['shoulders', 'chest', 'arms'],
 };
 
-const TODAY_INDEX = 0;
+const TODAY_INDEX = getTodayIndex();
 
 // ─── Shared Components ────────────────────────────────────────────────────────
 
@@ -575,13 +631,15 @@ function HomeScreen({
   const sortedParts = [...BODY_PARTS].sort((a, b) => bodyPartCount[b] - bodyPartCount[a]);
   const totalHours = Math.floor(totalMin / 60);
   const totalMinsRem = totalMin % 60;
+  const todayLabel = format(new Date(), "EEEE · dd MMM yyyy", { locale: fr });
+  const todayHeading = todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-5 pt-8 pb-5 flex items-start justify-between">
         <div>
           <p className="text-xs font-800 tracking-widest uppercase" style={{ color: accent }}>
-            Lundi · 16 sept. 2026
+            {todayHeading}
           </p>
           <h1 className="text-3xl font-900 mt-1">Bonjour,</h1>
           <p className="text-3xl font-900" style={{ color: accent }}>
@@ -755,12 +813,14 @@ function DayAssignSheet({
   accent,
   circuits,
   day,
+  dayDate,
   dayIndex,
   onAssign,
   onClose,
   onCreateCircuit,
 }: {
   dayIndex: number;
+  dayDate: Date;
   day: DayProgram;
   circuits: Circuit[];
   onAssign: (d: DayProgram) => void;
@@ -782,7 +842,7 @@ function DayAssignSheet({
           <div>
             <p className="font-900 text-lg">{DAY_LABELS[dayIndex]}</p>
             <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
-              {DAY_DATES[dayIndex]} sept. 2026
+              {format(dayDate, 'dd MMM yyyy', { locale: fr })}
             </p>
           </div>
           <button
@@ -915,18 +975,17 @@ function WeeklyScreen({
   const [weekOffset, setWeekOffset] = useState(0);
   const [assignIndex, setAssignIndex] = useState<number | null>(null);
   const isCurrentWeek = weekOffset === 0;
-  const week =
-    weekOffset === 0 ? { ...WEEK_HISTORY[0], days: currentWeekDays } : WEEK_HISTORY[weekOffset];
+  const isPastWeek = weekOffset > 0;
+  const weekStart = getWeekStart(weekOffset);
+  const historyWeek = findHistoryWeek(weekStart, WEEK_HISTORY);
+  const weekDays = isCurrentWeek
+    ? currentWeekDays
+    : (historyWeek?.days ?? buildEmptyWeekDays());
+  const weekStats = isPastWeek ? historyWeek?.stats : undefined;
+  const weekLabel = formatWeekLabel(weekStart);
+  const weekDateRange = formatDateRange(weekStart);
+  const dayNumbers = getWeekDayNumbers(weekStart);
   const todayCard = currentWeekDays[TODAY_INDEX];
-
-  const allDayNumbers = [
-    ['08', '09', '10', '11', '12', '13', '14'],
-    ['01', '02', '03', '04', '05', '06', '07'],
-    ['25', '26', '27', '28', '29', '30', '31'],
-    ['18', '19', '20', '21', '22', '23', '24'],
-    ['11', '12', '13', '14', '15', '16', '17'],
-  ];
-  const dayNumbers = allDayNumbers[weekOffset] ?? allDayNumbers[0];
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative">
@@ -943,44 +1002,36 @@ function WeeklyScreen({
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
-            disabled={weekOffset >= WEEK_HISTORY.length - 1}
-            style={{
-              backgroundColor: weekOffset >= WEEK_HISTORY.length - 1 ? '#111' : '#2a2a2a',
-              color: weekOffset >= WEEK_HISTORY.length - 1 ? '#333' : '#aaa',
-            }}
+            style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
             onClick={() => {
-              setWeekOffset((o) => Math.min(o + 1, WEEK_HISTORY.length - 1));
+              setWeekOffset((o) => o + 1);
             }}>
             <IconChevronLeft />
           </button>
           <div className="text-center">
             <p className="font-900 text-sm" style={{ color: isCurrentWeek ? accent : '#f5f5f5' }}>
-              {week.label}
+              {weekLabel}
             </p>
             <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-              {week.dateRange}
+              {weekDateRange}
             </p>
           </div>
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
-            disabled={weekOffset === 0}
-            style={{
-              backgroundColor: weekOffset === 0 ? '#111' : '#2a2a2a',
-              color: weekOffset === 0 ? '#333' : '#aaa',
-            }}
+            style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
             onClick={() => {
-              setWeekOffset((o) => Math.max(o - 1, 0));
+              setWeekOffset((o) => o - 1);
             }}>
             <IconChevronRight />
           </button>
         </div>
 
-        {!isCurrentWeek && (
+        {weekStats && (
           <div className="mx-5 mb-4 grid grid-cols-3 gap-2">
             {[
-              { label: 'Séances', value: `${week.stats.sessions}` },
-              { label: 'Minutes', value: `${week.stats.totalMin}` },
-              { label: 'Volume', value: week.stats.volume },
+              { label: 'Séances', value: `${weekStats.sessions}` },
+              { label: 'Minutes', value: `${weekStats.totalMin}` },
+              { label: 'Volume', value: weekStats.volume },
             ].map((s) => (
               <div
                 key={s.label}
@@ -1006,7 +1057,7 @@ function WeeklyScreen({
                 <p
                   className="text-xs font-800 tracking-widest uppercase"
                   style={{ color: '#0d0d0d90' }}>
-                  Aujourd'hui · Lundi
+                  Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
                 </p>
                 <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
                   {todayCard.circuit}
@@ -1028,9 +1079,9 @@ function WeeklyScreen({
         )}
 
         <div className="px-5 space-y-2.5 pb-6">
-          {week.days.map((day, i) => {
+          {weekDays.map((day, i) => {
             const isToday = isCurrentWeek && i === TODAY_INDEX;
-            const isDone = !isCurrentWeek && !day.isRest;
+            const isDone = isPastWeek && !!historyWeek && !day.isRest;
             const tappable = isCurrentWeek && i !== TODAY_INDEX;
             return (
               <div
@@ -1039,7 +1090,7 @@ function WeeklyScreen({
                 style={{
                   backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
                   border: isToday ? `1px solid ${withAlpha(accent, 0.25)}` : '1px solid #2a2a2a',
-                  opacity: !isCurrentWeek && day.isRest ? 0.45 : 1,
+                  opacity: isPastWeek && day.isRest ? 0.45 : 1,
                 }}
                 onClick={() => {
                   tappable ? setAssignIndex(i) : undefined;
@@ -1116,6 +1167,7 @@ function WeeklyScreen({
           accent={accent}
           circuits={circuits}
           day={currentWeekDays[assignIndex]}
+          dayDate={addDays(weekStart, assignIndex)}
           dayIndex={assignIndex}
           onAssign={(d) => {
             onUpdateDay(assignIndex, d);

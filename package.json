@@ -7,6 +7,7 @@
     "@nappr/eslint-config": "^0.2.0",
     "@nappr/nappr-config": "^0.2.2",
     "classnames": "^2.5.1",
+    "date-fns": "^4.4.0",
     "luxon": "^3.7.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
