@@ -52,6 +52,21 @@ test.describe('Visual snapshots — main screens', () => {
     await expect(page).toHaveScreenshot('programme-assign-past-confirm.png');
   });
 
+  test('Programme — vue mois', async ({ page }) => {
+    await openProgramme(page);
+    await page.getByRole('button', { name: 'Mois' }).click();
+    await expect(page.getByText('Séances')).toBeVisible();
+    await expect(page).toHaveScreenshot('programme-month.png');
+  });
+
+  test('Programme — assignation depuis le mois', async ({ page }) => {
+    await openProgramme(page);
+    await page.getByRole('button', { name: 'Mois' }).click();
+    await page.getByRole('button', { name: '08' }).first().click();
+    await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
+    await expect(page).toHaveScreenshot('programme-month-assign.png');
+  });
+
   test('Circuits', async ({ page }) => {
     await openApp(page);
     await page.getByRole('button', { name: 'Circuits' }).click();

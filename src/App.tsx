@@ -1,7 +1,9 @@
 import {
   addDays,
+  addMonths,
   addWeeks,
   eachDayOfInterval,
+  endOfMonth,
   endOfWeek,
   format,
   getDay,
@@ -9,7 +11,9 @@ import {
   getISOWeekYear,
   isBefore,
   isSameDay,
+  isSameMonth,
   startOfDay,
+  startOfMonth,
   startOfWeek,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -355,6 +359,51 @@ function isSameAssignment(a: DayProgram, b: DayProgram): boolean {
   if (a.isRest && b.isRest) return true;
   if (a.isRest || b.isRest) return false;
   return a.circuitId === b.circuitId;
+}
+
+const DAY_LETTER_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+function getMonthStart(monthOffset: number, from: Date = new Date()): Date {
+  return startOfMonth(addMonths(from, -monthOffset));
+}
+
+function getMonthGridDays(monthStart: Date): Date[] {
+  const gridStart = startOfWeek(monthStart, WEEK_START_OPTIONS);
+  return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
+}
+
+function getDayProgram(date: Date, weekPrograms: Record<string, DayProgram[]>): DayProgram {
+  const weekStart = startOfWeek(date, WEEK_START_OPTIONS);
+  const days = resolveWeekDays(weekStart, weekPrograms);
+  return days[getTodayIndex(date)];
+}
+
+function formatMonthLabel(monthStart: Date): string {
+  const label = format(monthStart, 'MMMM yyyy', { locale: fr });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function computeMonthStats(
+  monthStart: Date,
+  weekPrograms: Record<string, DayProgram[]>,
+  circuits: Circuit[],
+): { sessions: number; totalMin: number; exercises: number } {
+  const daysInMonth = eachDayOfInterval({
+    end: endOfMonth(monthStart),
+    start: monthStart,
+  });
+  let sessions = 0;
+  let totalMin = 0;
+  let exercises = 0;
+  for (const date of daysInMonth) {
+    const day = getDayProgram(date, weekPrograms);
+    if (day.isRest) continue;
+    sessions += 1;
+    exercises += day.exercises ?? 0;
+    const circuit = day.circuitId ? circuits.find((c) => c.id === day.circuitId) : undefined;
+    if (circuit) totalMin += circuitDurationMin(circuit);
+  }
+  return { exercises, sessions, totalMin };
 }
 
 const initialCircuits: Circuit[] = [
@@ -1058,8 +1107,12 @@ function WeeklyScreen({
   onCreateCircuit: () => void;
   accent: string;
 }) {
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [weekOffset, setWeekOffset] = useState(0);
   const [assignIndex, setAssignIndex] = useState<number | null>(null);
+  const [monthOffset, setMonthOffset] = useState(0);
+  const [monthAssignDate, setMonthAssignDate] = useState<Date | null>(null);
+
   const isCurrentWeek = weekOffset === 0;
   const isPastWeek = weekOffset > 0;
   const weekStart = getWeekStart(weekOffset);
@@ -1072,190 +1125,399 @@ function WeeklyScreen({
   const todayCard = weekDays[TODAY_INDEX];
   const assignDayDate = assignIndex !== null ? addDays(weekStart, assignIndex) : null;
 
+  const monthStart = getMonthStart(monthOffset);
+  const monthGridDays = getMonthGridDays(monthStart);
+  const monthStats = computeMonthStats(monthStart, weekPrograms, circuits);
+  const today = new Date();
+  const todayInMonth = isSameMonth(today, monthStart);
+  const todayProgram = getDayProgram(today, weekPrograms);
+  const focusDate = monthAssignDate ?? (todayInMonth ? today : monthStart);
+  const focusDayName = format(focusDate, 'EEEE', { locale: fr });
+  const focusDayTitle = format(focusDate, 'd MMMM yyyy', { locale: fr });
+  const monthAssignWeekStart =
+    monthAssignDate !== null ? startOfWeek(monthAssignDate, WEEK_START_OPTIONS) : null;
+  const monthAssignDayIndex = monthAssignDate !== null ? getTodayIndex(monthAssignDate) : null;
+
   return (
     <div className="flex flex-col h-full overflow-hidden relative">
       <div className="flex-1 overflow-y-auto">
         <div className="px-5 pt-8 pb-4">
           <h1 className="text-3xl font-900">Programme</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#888' }}>
-            Hebdomadaire
-          </p>
-        </div>
-
-        <div
-          className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
-          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-          <button
-            aria-label="Semaine précédente"
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
-            onClick={() => {
-              setWeekOffset((o) => o + 1);
-            }}>
-            <IconChevronLeft />
-          </button>
-          <div className="text-center">
-            <p className="font-900 text-sm" style={{ color: isCurrentWeek ? accent : '#f5f5f5' }}>
-              {weekLabel}
-            </p>
-            <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-              {weekDateRange}
-            </p>
+          <div
+            className="mt-3 flex rounded-xl p-1"
+            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            {(
+              [
+                { id: 'week' as const, label: 'Semaine' },
+                { id: 'month' as const, label: 'Mois' },
+              ] as const
+            ).map((tab) => {
+              const active = viewMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  className="flex-1 rounded-lg py-2 text-sm font-800 transition-all"
+                  style={{
+                    backgroundColor: active ? accent : 'transparent',
+                    color: active ? '#0d0d0d' : '#888',
+                  }}
+                  onClick={() => {
+                    setViewMode(tab.id);
+                  }}>
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
-          <button
-            aria-label="Semaine suivante"
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
-            style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
-            onClick={() => {
-              setWeekOffset((o) => o - 1);
-            }}>
-            <IconChevronRight />
-          </button>
         </div>
 
-        {weekStats && (
-          <div className="mx-5 mb-4 grid grid-cols-3 gap-2">
-            {[
-              { label: 'Séances', value: `${weekStats.sessions}` },
-              { label: 'Minutes', value: `${weekStats.totalMin}` },
-              { label: 'Volume', value: weekStats.volume },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl p-3 text-center"
-                style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-                <p className="text-lg font-900" style={{ color: accent }}>
-                  {s.value}
+        {viewMode === 'week' && (
+          <>
+            <div
+              className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <button
+                aria-label="Semaine précédente"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
+                onClick={() => {
+                  setWeekOffset((o) => o + 1);
+                }}>
+                <IconChevronLeft />
+              </button>
+              <div className="text-center">
+                <p className="font-900 text-sm" style={{ color: isCurrentWeek ? accent : '#f5f5f5' }}>
+                  {weekLabel}
                 </p>
-                <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
-                  {s.label}
+                <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+                  {weekDateRange}
                 </p>
               </div>
-            ))}
-          </div>
-        )}
-
-        {isCurrentWeek && todayCard && !todayCard.isRest && (
-          <div
-            className="mx-5 mb-5 rounded-2xl overflow-hidden"
-            style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
-            <div className="p-5 flex items-center justify-between">
               <button
-                className="text-left flex-1 min-w-0"
+                aria-label="Semaine suivante"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
-                  setAssignIndex(TODAY_INDEX);
+                  setWeekOffset((o) => o - 1);
                 }}>
-                <p
-                  className="text-xs font-800 tracking-widest uppercase"
-                  style={{ color: '#0d0d0d90' }}>
-                  Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
-                </p>
-                <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                  {todayCard.circuit}
-                </h2>
-                <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                  {todayCard.exercises} exercices · Modifier
-                </p>
-              </button>
-              <button
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
-                style={{ backgroundColor: '#0d0d0d' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onStartTimer();
-                }}>
-                <span style={{ color: accent, marginLeft: 3 }}>
-                  <IconPlay />
-                </span>
+                <IconChevronRight />
               </button>
             </div>
-          </div>
+
+            {weekStats && (
+              <div className="mx-5 mb-4 grid grid-cols-3 gap-2">
+                {[
+                  { label: 'Séances', value: `${weekStats.sessions}` },
+                  { label: 'Minutes', value: `${weekStats.totalMin}` },
+                  { label: 'Volume', value: weekStats.volume },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-xl p-3 text-center"
+                    style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                    <p className="text-lg font-900" style={{ color: accent }}>
+                      {s.value}
+                    </p>
+                    <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
+                      {s.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isCurrentWeek && todayCard && !todayCard.isRest && (
+              <div
+                className="mx-5 mb-5 rounded-2xl overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
+                <div className="p-5 flex items-center justify-between">
+                  <button
+                    className="text-left flex-1 min-w-0"
+                    onClick={() => {
+                      setAssignIndex(TODAY_INDEX);
+                    }}>
+                    <p
+                      className="text-xs font-800 tracking-widest uppercase"
+                      style={{ color: '#0d0d0d90' }}>
+                      Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
+                    </p>
+                    <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
+                      {todayCard.circuit}
+                    </h2>
+                    <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
+                      {todayCard.exercises} exercices · Modifier
+                    </p>
+                  </button>
+                  <button
+                    className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
+                    style={{ backgroundColor: '#0d0d0d' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStartTimer();
+                    }}>
+                    <span style={{ color: accent, marginLeft: 3 }}>
+                      <IconPlay />
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="px-5 space-y-2.5 pb-6">
+              {weekDays.map((day, i) => {
+                const dayDate = addDays(weekStart, i);
+                const isToday = isSameDay(dayDate, new Date());
+                const isPastDay = isPastCalendarDay(dayDate);
+                const isDone = isPastDay && !day.isRest;
+                return (
+                  <div
+                    key={day.day}
+                    className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer"
+                    style={{
+                      backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
+                      border: isToday ? `1px solid ${withAlpha(accent, 0.25)}` : '1px solid #2a2a2a',
+                      opacity: isPastDay && day.isRest ? 0.45 : 1,
+                    }}
+                    onClick={() => {
+                      setAssignIndex(i);
+                    }}>
+                    <div className="w-10 text-center">
+                      <p
+                        className="text-xs font-800 tracking-wider"
+                        style={{
+                          color: isToday ? accent : isDone ? withAlpha(accent, 0.4) : '#555',
+                        }}>
+                        {day.short}
+                      </p>
+                      <p
+                        className="text-lg font-900"
+                        style={{ color: isToday ? '#fff' : isDone ? '#888' : '#333' }}>
+                        {dayNumbers[i]}
+                      </p>
+                    </div>
+                    <div className="w-px self-stretch" style={{ backgroundColor: '#2a2a2a' }} />
+                    {day.isRest ? (
+                      <div className="flex items-center gap-3 flex-1">
+                        <IconCouch />
+                        <p className="font-700" style={{ color: '#555' }}>
+                          Repos
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="font-800 text-sm truncate"
+                          style={{ color: isToday ? '#fff' : isDone ? '#ccc' : '#888' }}>
+                          {day.circuit}
+                        </p>
+                        <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+                          {day.exercises} exercices
+                        </p>
+                      </div>
+                    )}
+                    {isToday && (
+                      <span
+                        className="text-xs font-800 px-2.5 py-1 rounded-full shrink-0"
+                        style={{ backgroundColor: withAlpha(accent, 0.12), color: accent }}>
+                        En cours
+                      </span>
+                    )}
+                    {isDone && (
+                      <span
+                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: withAlpha(accent, 0.12) }}>
+                        <svg
+                          fill="none"
+                          height="12"
+                          stroke={accent}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="3"
+                          viewBox="0 0 24 24"
+                          width="12">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                    )}
+                    <span style={{ color: '#333', flexShrink: 0 }}>
+                      <IconChevronRight />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
-        <div className="px-5 space-y-2.5 pb-6">
-          {weekDays.map((day, i) => {
-            const dayDate = addDays(weekStart, i);
-            const isToday = isSameDay(dayDate, new Date());
-            const isPastDay = isPastCalendarDay(dayDate);
-            const isDone = isPastDay && !day.isRest;
-            return (
-              <div
-                key={day.day}
-                className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer"
-                style={{
-                  backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
-                  border: isToday ? `1px solid ${withAlpha(accent, 0.25)}` : '1px solid #2a2a2a',
-                  opacity: isPastDay && day.isRest ? 0.45 : 1,
-                }}
+        {viewMode === 'month' && (
+          <>
+            <div className="px-5 mb-4">
+              <p
+                className="text-sm font-800 tracking-wide capitalize"
+                style={{ color: accent }}>
+                {focusDayName}
+              </p>
+              <p className="text-2xl font-900 mt-0.5 capitalize">{focusDayTitle}</p>
+            </div>
+
+            <div className="mx-5 mb-4 flex items-center justify-between">
+              <button
+                aria-label="Mois précédent"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
-                  setAssignIndex(i);
+                  setMonthOffset((o) => o + 1);
+                  setMonthAssignDate(null);
                 }}>
-                <div className="w-10 text-center">
-                  <p
-                    className="text-xs font-800 tracking-wider"
-                    style={{ color: isToday ? accent : isDone ? withAlpha(accent, 0.4) : '#555' }}>
-                    {day.short}
+                <IconChevronLeft />
+              </button>
+              <p className="font-900 text-sm" style={{ color: '#f5f5f5' }}>
+                {formatMonthLabel(monthStart)}
+              </p>
+              <button
+                aria-label="Mois suivant"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
+                onClick={() => {
+                  setMonthOffset((o) => o - 1);
+                  setMonthAssignDate(null);
+                }}>
+                <IconChevronRight />
+              </button>
+            </div>
+
+            <div className="mx-5 mb-4 grid grid-cols-3 gap-2">
+              {[
+                { label: 'Séances', value: `${monthStats.sessions}` },
+                { label: 'Minutes', value: `${monthStats.totalMin}` },
+                { label: 'Exos', value: `${monthStats.exercises}` },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="rounded-xl p-3 text-center"
+                  style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                  <p className="text-lg font-900" style={{ color: accent }}>
+                    {s.value}
                   </p>
-                  <p
-                    className="text-lg font-900"
-                    style={{ color: isToday ? '#fff' : isDone ? '#888' : '#333' }}>
-                    {dayNumbers[i]}
+                  <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
+                    {s.label}
                   </p>
                 </div>
-                <div className="w-px self-stretch" style={{ backgroundColor: '#2a2a2a' }} />
-                {day.isRest ? (
-                  <div className="flex items-center gap-3 flex-1">
-                    <IconCouch />
-                    <p className="font-700" style={{ color: '#555' }}>
-                      Repos
-                    </p>
+              ))}
+            </div>
+
+            <div className="px-5 mb-4">
+              <div className="grid gap-1" style={{ gridTemplateColumns: '28px repeat(7, 1fr)' }}>
+                <div />
+                {DAY_LETTER_HEADERS.map((letter, i) => (
+                  <div
+                    key={`${letter}-${i}`}
+                    className="text-center text-xs font-800 py-1"
+                    style={{ color: '#555' }}>
+                    {letter}
                   </div>
-                ) : (
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="font-800 text-sm truncate"
-                      style={{ color: isToday ? '#fff' : isDone ? '#ccc' : '#888' }}>
-                      {day.circuit}
-                    </p>
-                    <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                      {day.exercises} exercices
-                    </p>
-                  </div>
-                )}
-                {isToday && (
-                  <span
-                    className="text-xs font-800 px-2.5 py-1 rounded-full shrink-0"
-                    style={{ backgroundColor: withAlpha(accent, 0.12), color: accent }}>
-                    En cours
-                  </span>
-                )}
-                {isDone && (
-                  <span
-                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: withAlpha(accent, 0.12) }}>
-                    <svg
-                      fill="none"
-                      height="12"
-                      stroke={accent}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="3"
-                      viewBox="0 0 24 24"
-                      width="12">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                )}
-                <span style={{ color: '#333', flexShrink: 0 }}>
-                  <IconChevronRight />
-                </span>
+                ))}
+                {Array.from({ length: 6 }, (_, weekRow) => {
+                  const rowStart = monthGridDays[weekRow * 7];
+                  const weekNumber = getISOWeek(rowStart);
+                  return (
+                    <div key={`week-row-${weekRow}`} className="contents">
+                      <div className="flex items-center justify-center">
+                        <span
+                          className="text-[10px] font-800 px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: '#2a2a2a', color: '#555' }}>
+                          {weekNumber}
+                        </span>
+                      </div>
+                      {monthGridDays.slice(weekRow * 7, weekRow * 7 + 7).map((date) => {
+                        const inMonth = isSameMonth(date, monthStart);
+                        const isTodayCell = isSameDay(date, today);
+                        const isSelected =
+                          monthAssignDate !== null
+                            ? isSameDay(date, monthAssignDate)
+                            : isTodayCell && todayInMonth;
+                        const program = getDayProgram(date, weekPrograms);
+                        const circuitColor = program.circuitId
+                          ? circuits.find((c) => c.id === program.circuitId)?.color
+                          : undefined;
+                        return (
+                          <button
+                            key={date.toISOString()}
+                            className="flex flex-col items-center justify-center py-1.5 gap-0.5"
+                            onClick={() => {
+                              setMonthAssignDate(date);
+                            }}>
+                            <span
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-800"
+                              style={{
+                                backgroundColor: isSelected ? accent : 'transparent',
+                                color: isSelected
+                                  ? '#0d0d0d'
+                                  : inMonth
+                                    ? '#ccc'
+                                    : '#333',
+                              }}>
+                              {format(date, 'dd')}
+                            </span>
+                            <span
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  !program.isRest && circuitColor && inMonth
+                                    ? circuitColor
+                                    : 'transparent',
+                              }}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </div>
+
+            {todayInMonth && !todayProgram.isRest && (
+              <div
+                className="mx-5 mb-6 rounded-2xl overflow-hidden"
+                style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
+                <div className="p-5 flex items-center justify-between">
+                  <button
+                    className="text-left flex-1 min-w-0"
+                    onClick={() => {
+                      setMonthAssignDate(today);
+                    }}>
+                    <p
+                      className="text-xs font-800 tracking-widest uppercase"
+                      style={{ color: '#0d0d0d90' }}>
+                      Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
+                    </p>
+                    <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
+                      {todayProgram.circuit}
+                    </h2>
+                    <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
+                      {todayProgram.exercises} exercices · Modifier
+                    </p>
+                  </button>
+                  <button
+                    className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
+                    style={{ backgroundColor: '#0d0d0d' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStartTimer();
+                    }}>
+                    <span style={{ color: accent, marginLeft: 3 }}>
+                      <IconPlay />
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {assignIndex !== null && assignDayDate && (
+      {viewMode === 'week' && assignIndex !== null && assignDayDate && (
         <DayAssignSheet
           accent={accent}
           circuits={circuits}
@@ -1276,6 +1538,31 @@ function WeeklyScreen({
           }}
         />
       )}
+
+      {viewMode === 'month' &&
+        monthAssignDate &&
+        monthAssignWeekStart &&
+        monthAssignDayIndex !== null && (
+          <DayAssignSheet
+            accent={accent}
+            circuits={circuits}
+            day={getDayProgram(monthAssignDate, weekPrograms)}
+            dayDate={monthAssignDate}
+            dayIndex={monthAssignDayIndex}
+            requiresConfirmation={isPastCalendarDay(monthAssignDate)}
+            onAssign={(d) => {
+              onUpdateDay(monthAssignWeekStart, monthAssignDayIndex, d);
+              setMonthAssignDate(null);
+            }}
+            onClose={() => {
+              setMonthAssignDate(null);
+            }}
+            onCreateCircuit={() => {
+              setMonthAssignDate(null);
+              onCreateCircuit();
+            }}
+          />
+        )}
     </div>
   );
 }
