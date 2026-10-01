@@ -589,6 +589,7 @@ function HomeScreen({
           </p>
         </div>
         <button
+          aria-label="Profil"
           className="w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
           onClick={onGoToProfile}>
