@@ -1211,6 +1211,7 @@ function CircuitsScreen({
           </p>
         </div>
         <button
+          aria-label="Créer un circuit"
           className="w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ backgroundColor: accent, color: '#0d0d0d' }}
           onClick={onCreateNew}>
