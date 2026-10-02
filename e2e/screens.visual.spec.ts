@@ -15,6 +15,12 @@ async function openProgramme(page: import('@playwright/test').Page) {
   await expect(page.getByRole('heading', { name: 'Programme' })).toBeVisible();
 }
 
+async function openProgrammeWeek(page: import('@playwright/test').Page) {
+  await openProgramme(page);
+  await page.getByRole('button', { name: 'Semaine' }).click();
+  await expect(page.getByRole('button', { name: 'Semaine suivante' })).toBeVisible();
+}
+
 test.describe('Visual snapshots — main screens', () => {
   test('Accueil', async ({ page }) => {
     await openApp(page);
@@ -27,14 +33,14 @@ test.describe('Visual snapshots — main screens', () => {
   });
 
   test('Programme — assignation aujourd’hui', async ({ page }) => {
-    await openProgramme(page);
+    await openProgrammeWeek(page);
     await page.getByText('LUN', { exact: true }).click();
     await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
     await expect(page).toHaveScreenshot('programme-assign-today.png');
   });
 
   test('Programme — assignation futur', async ({ page }) => {
-    await openProgramme(page);
+    await openProgrammeWeek(page);
     await page.getByRole('button', { name: 'Semaine suivante' }).click();
     await expect(page.getByText('Repos').first()).toBeVisible();
     await page.getByText('LUN', { exact: true }).click();
@@ -43,7 +49,7 @@ test.describe('Visual snapshots — main screens', () => {
   });
 
   test('Programme — confirmation passé', async ({ page }) => {
-    await openProgramme(page);
+    await openProgrammeWeek(page);
     await page.getByRole('button', { name: 'Semaine précédente' }).click();
     await page.locator('p.truncate', { hasText: 'Push Day' }).first().click();
     await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
@@ -54,17 +60,16 @@ test.describe('Visual snapshots — main screens', () => {
 
   test('Programme — vue mois', async ({ page }) => {
     await openProgramme(page);
-    await page.getByRole('button', { name: 'Mois' }).click();
     await expect(page.getByText('Séances')).toBeVisible();
     await expect(page).toHaveScreenshot('programme-month.png');
   });
 
-  test('Programme — assignation depuis le mois', async ({ page }) => {
+  test('Programme — semaine depuis le mois', async ({ page }) => {
     await openProgramme(page);
-    await page.getByRole('button', { name: 'Mois' }).click();
     await page.getByRole('button', { name: '08' }).first().click();
-    await expect(page.getByRole('button', { name: 'Repos' })).toBeVisible();
-    await expect(page).toHaveScreenshot('programme-month-assign.png');
+    await expect(page.getByRole('button', { name: 'Semaine suivante' })).toBeVisible();
+    await expect(page.getByText('LUN', { exact: true })).toBeVisible();
+    await expect(page).toHaveScreenshot('programme-month-to-week.png');
   });
 
   test('Circuits', async ({ page }) => {

@@ -28,7 +28,8 @@ export default defineConfig({
   },
   webServer: {
     command: 'yarn start',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: process.env.E2E_FRESH === '1' ? false : !process.env.CI,
+    timeout: 120_000,
     url: 'http://127.0.0.1:3000',
   },
   workers: process.env.CI ? 1 : undefined,

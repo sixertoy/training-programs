@@ -19,9 +19,10 @@ export default defineConfig({
     checker({
       eslint: {
         dev: { logLevel: ['error'] },
-        lintCommand: 'eslint .',
+        lintCommand: 'eslint "./src"',
         useFlatConfig: true,
       },
+      overlay: false,
       typescript: true,
     }),
   ],
