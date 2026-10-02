@@ -11,6 +11,7 @@ import pause from './pause.svg?raw';
 import play from './play.svg?raw';
 import plus from './plus.svg?raw';
 import skip from './skip.svg?raw';
+import week from './week.svg?raw';
 
 function SvgIcon({ svg }: { svg: string }) {
   return <span dangerouslySetInnerHTML={{ __html: svg }} style={{ display: 'contents' }} />;
@@ -29,3 +30,4 @@ export const IconPause = () => <SvgIcon svg={pause} />;
 export const IconPlay = () => <SvgIcon svg={play} />;
 export const IconPlus = () => <SvgIcon svg={plus} />;
 export const IconSkip = () => <SvgIcon svg={skip} />;
+export const IconWeek = () => <SvgIcon svg={week} />;

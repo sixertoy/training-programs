@@ -33,6 +33,7 @@ import {
   IconPlay,
   IconPlus,
   IconSkip,
+  IconWeek,
 } from './assets/icons';
 
 enum CardColor {
@@ -1122,7 +1123,6 @@ function WeeklyScreen({
   const weekLabel = formatWeekLabel(weekStart);
   const weekDateRange = formatDateRange(weekStart);
   const dayNumbers = getWeekDayNumbers(weekStart);
-  const todayCard = weekDays[TODAY_INDEX];
   const assignDayDate = assignIndex !== null ? addDays(weekStart, assignIndex) : null;
 
   const monthStart = getMonthStart(monthOffset);
@@ -1131,45 +1131,92 @@ function WeeklyScreen({
   const today = new Date();
   const todayInMonth = isSameMonth(today, monthStart);
   const todayProgram = getDayProgram(today, weekPrograms);
-  const focusDate = monthAssignDate ?? (todayInMonth ? today : monthStart);
-  const focusDayName = format(focusDate, 'EEEE', { locale: fr });
-  const focusDayTitle = format(focusDate, 'd MMMM yyyy', { locale: fr });
+  const headerDayName = format(today, 'EEEE', { locale: fr });
+  const headerDateTitle = format(today, 'd MMMM yyyy', { locale: fr });
   const monthAssignWeekStart =
     monthAssignDate !== null ? startOfWeek(monthAssignDate, WEEK_START_OPTIONS) : null;
   const monthAssignDayIndex = monthAssignDate !== null ? getTodayIndex(monthAssignDate) : null;
+
+  const openTodayAssign = () => {
+    if (viewMode === 'week') {
+      setAssignIndex(TODAY_INDEX);
+      return;
+    }
+    setMonthAssignDate(today);
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden relative">
       <div className="flex-1 overflow-y-auto">
         <div className="px-5 pt-8 pb-4">
-          <h1 className="text-3xl font-900">Programme</h1>
-          <div
-            className="mt-3 flex rounded-xl p-1"
-            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-            {(
-              [
-                { id: 'week' as const, label: 'Semaine' },
-                { id: 'month' as const, label: 'Mois' },
-              ] as const
-            ).map((tab) => {
-              const active = viewMode === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  className="flex-1 rounded-lg py-2 text-sm font-800 transition-all"
-                  style={{
-                    backgroundColor: active ? accent : 'transparent',
-                    color: active ? '#0d0d0d' : '#888',
-                  }}
-                  onClick={() => {
-                    setViewMode(tab.id);
-                  }}>
-                  {tab.label}
-                </button>
-              );
-            })}
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-3xl font-900">Programme</h1>
+            <div
+              className="inline-flex rounded-xl p-1 shrink-0"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              {(
+                [
+                  { id: 'week' as const, label: 'Semaine', icon: <IconWeek /> },
+                  { id: 'month' as const, label: 'Mois', icon: <IconCalendar /> },
+                ] as const
+              ).map((tab) => {
+                const active = viewMode === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    aria-label={tab.label}
+                    className="min-w-11 min-h-11 rounded-lg flex items-center justify-center transition-all"
+                    style={{
+                      backgroundColor: active ? accent : 'transparent',
+                      color: active ? '#0d0d0d' : '#888',
+                    }}
+                    onClick={() => {
+                      setViewMode(tab.id);
+                    }}>
+                    {tab.icon}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+          <p className="text-sm font-800 tracking-wide capitalize mt-3" style={{ color: accent }}>
+            {headerDayName}
+          </p>
+          <p className="text-2xl font-900 mt-0.5 capitalize">{headerDateTitle}</p>
         </div>
+
+        {!todayProgram.isRest && (
+          <div
+            className="mx-5 mb-5 rounded-2xl overflow-hidden"
+            style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
+            <div className="p-5 flex items-center justify-between">
+              <button className="text-left flex-1 min-w-0" onClick={openTodayAssign}>
+                <p
+                  className="text-xs font-800 tracking-widest uppercase"
+                  style={{ color: '#0d0d0d90' }}>
+                  Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
+                </p>
+                <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
+                  {todayProgram.circuit}
+                </h2>
+                <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
+                  {todayProgram.exercises} exercices · Modifier
+                </p>
+              </button>
+              <button
+                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
+                style={{ backgroundColor: '#0d0d0d' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStartTimer();
+                }}>
+                <span style={{ color: accent, marginLeft: 3 }}>
+                  <IconPlay />
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {viewMode === 'week' && (
           <>
@@ -1223,43 +1270,6 @@ function WeeklyScreen({
                     </p>
                   </div>
                 ))}
-              </div>
-            )}
-
-            {isCurrentWeek && todayCard && !todayCard.isRest && (
-              <div
-                className="mx-5 mb-5 rounded-2xl overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
-                <div className="p-5 flex items-center justify-between">
-                  <button
-                    className="text-left flex-1 min-w-0"
-                    onClick={() => {
-                      setAssignIndex(TODAY_INDEX);
-                    }}>
-                    <p
-                      className="text-xs font-800 tracking-widest uppercase"
-                      style={{ color: '#0d0d0d90' }}>
-                      Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
-                    </p>
-                    <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                      {todayCard.circuit}
-                    </h2>
-                    <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                      {todayCard.exercises} exercices · Modifier
-                    </p>
-                  </button>
-                  <button
-                    className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
-                    style={{ backgroundColor: '#0d0d0d' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartTimer();
-                    }}>
-                    <span style={{ color: accent, marginLeft: 3 }}>
-                      <IconPlay />
-                    </span>
-                  </button>
-                </div>
               </div>
             )}
 
@@ -1351,15 +1361,6 @@ function WeeklyScreen({
 
         {viewMode === 'month' && (
           <>
-            <div className="px-5 mb-4">
-              <p
-                className="text-sm font-800 tracking-wide capitalize"
-                style={{ color: accent }}>
-                {focusDayName}
-              </p>
-              <p className="text-2xl font-900 mt-0.5 capitalize">{focusDayTitle}</p>
-            </div>
-
             <div className="mx-5 mb-4 flex items-center justify-between">
               <button
                 aria-label="Mois précédent"
@@ -1406,7 +1407,7 @@ function WeeklyScreen({
               ))}
             </div>
 
-            <div className="px-5 mb-4">
+            <div className="px-5 mb-6">
               <div className="grid gap-1" style={{ gridTemplateColumns: '28px repeat(7, 1fr)' }}>
                 <div />
                 {DAY_LETTER_HEADERS.map((letter, i) => (
@@ -1451,11 +1452,7 @@ function WeeklyScreen({
                               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-800"
                               style={{
                                 backgroundColor: isSelected ? accent : 'transparent',
-                                color: isSelected
-                                  ? '#0d0d0d'
-                                  : inMonth
-                                    ? '#ccc'
-                                    : '#333',
+                                color: isSelected ? '#0d0d0d' : inMonth ? '#ccc' : '#333',
                               }}>
                               {format(date, 'dd')}
                             </span>
@@ -1476,43 +1473,6 @@ function WeeklyScreen({
                 })}
               </div>
             </div>
-
-            {todayInMonth && !todayProgram.isRest && (
-              <div
-                className="mx-5 mb-6 rounded-2xl overflow-hidden"
-                style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
-                <div className="p-5 flex items-center justify-between">
-                  <button
-                    className="text-left flex-1 min-w-0"
-                    onClick={() => {
-                      setMonthAssignDate(today);
-                    }}>
-                    <p
-                      className="text-xs font-800 tracking-widest uppercase"
-                      style={{ color: '#0d0d0d90' }}>
-                      Aujourd'hui · {DAY_LABELS[TODAY_INDEX]}
-                    </p>
-                    <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                      {todayProgram.circuit}
-                    </h2>
-                    <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                      {todayProgram.exercises} exercices · Modifier
-                    </p>
-                  </button>
-                  <button
-                    className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
-                    style={{ backgroundColor: '#0d0d0d' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartTimer();
-                    }}>
-                    <span style={{ color: accent, marginLeft: 3 }}>
-                      <IconPlay />
-                    </span>
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
