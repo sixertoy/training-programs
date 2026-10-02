@@ -355,6 +355,7 @@ function resolveWeekDays(
 ): DayProgram[] {
   const key = getWeekKey(weekStart);
   if (weekPrograms[key]) return weekPrograms[key];
+  return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
 }
 
 function isPastCalendarDay(dayDate: Date, now: Date = new Date()): boolean {
@@ -792,20 +793,22 @@ function HomeScreen({
         </button>
       </div>
 
-      {todayProgram && (
-        <div <div className="p-5 flex items-center justify-bet   <button className="text-left flex-1 min-w-0" onClick={onGoToWeekly}>
+      {todayProgram && !todayProgram.isRest && (
+        <div
+          className="mx-5 mb-5 rounded-2xl overflow-hidden"
+          style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
+          <div className="p-5 flex items-center justify-between">
+            <button className="text-left flex-1 min-w-0" onClick={onGoToWeekly}>
               <p
                 className="text-xs font-800 tracking-widest uppercase"
                 style={{ color: '#0d0d0d90' }}>
                 Aujourd'hui · {DAY_LABELS[todayIndex]}
               </p>
               <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                {todayProgram.isRest || !todayProgram.circuit ? 'Repos' : todayProgram.circuit}
+                {todayProgram.circuit}
               </h2>
               <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                {todayProgram.isRest || !todayProgram.circuit
-                  ? 'Modifier'
-                  : `${todayProgram.exercises ?? 0} exercices · Modifier`}
+                {todayProgram.exercises} exercices · Modifier
               </p>
             </button>
             <button
@@ -1158,8 +1161,9 @@ function DayAssignSheet({
             <p className="text-sm font-600 mb-5" style={{ color: '#888' }}>
               Tu modifies un jour passé ({format(dayDate, 'EEEE dd MMM yyyy', { locale: fr })}) vers
               « {pendingLabel} ». Continuer ?
-            </p>iv className="flex gap-3">) vers
-            bn
+            </p>
+            <div className="flex gap-3">
+              <button
                 className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
                 style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
                 onClick={() => {
@@ -1252,8 +1256,8 @@ function WeeklyScreen({
           { id: 'week' as const, label: 'Semaine', icon: <IconWeek /> },
           { id: 'month' as const, label: 'Mois', icon: <IconCalendar /> },
         ] as const
-      ).map icon: <IconWeek(/>, (tab) => { }
-         { Calndarst active = viewMode === tab.id;
+      ).map((tab) => {
+        const active = viewMode === tab.id;
         return (
           <button
             key={tab.id}
@@ -1283,9 +1287,7 @@ function WeeklyScreen({
               <p
                 className="text-sm font-800 tracking-wide capitalize leading-tight"
                 style={{ color: accent }}>
-                
-   {            headerDayName}
-               
+                {headerDayName}
               </p>
               <p className="text-2xl font-900 capitalize leading-tight mt-0.5">{headerDateTitle}</p>
             </div>
@@ -1295,7 +1297,7 @@ function WeeklyScreen({
 
         {viewMode === 'week' && (
           <>
-           React.Fragment <div
+            <div
               className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
               <button
@@ -1309,9 +1311,7 @@ function WeeklyScreen({
               </button>
               <div className="text-center flex-1 px-2">
                 <p
-                  
-  c               lassName="font-900 text-sm"
-                 
+                  className="font-900 text-sm"
                   style={{ color: isCurrentWeek ? accent : '#f5f5f5' }}>
                   {weekLabel}
                 </p>
@@ -1320,9 +1320,9 @@ function WeeklyScreen({
                 </p>
                 <button
                   aria-label="Aujourd'hui"
-                  disabled={isCurrentPeriod}
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
-                  risabled={isCurrentPeriod}
+                  style={{ backgroundColor: '#2a2a2a', color: accent }}
+                  disabled={isCurrentPeriod}
                   onClick={goToToday}>
                   Aujourd'hui
                 </button>
@@ -1351,9 +1351,7 @@ function WeeklyScreen({
                     key={day.day}
                     className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer"
                     style={{
-                      backgroundColor
-:                        isToday ? '#2a2a2a' : '#1a1a1a',
-                       
+                      backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
                       border: isToday
                         ? `1px solid ${withAlpha(accent, 0.25)}`
                         : '1px solid #2a2a2a',
@@ -1424,11 +1422,11 @@ function WeeklyScreen({
                       <IconChevronRight />
                     </span>
                   </div>
-            React.Fragment    );
+                );
               })}
             </div>
           </>
-        )}React.Fragment
+        )}
 
         {viewMode === 'month' && (
           <>
@@ -1446,8 +1444,8 @@ function WeeklyScreen({
                 <p className="font-900 text-sm" style={{ color: '#f5f5f5' }}>
                   {formatMonthLabel(monthStart)}
                 </p>
-                  disabled={isCurrentPeriod}
                 <button
+                  aria-label="Aujourd'hui"
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
                   style={{ backgroundColor: '#2a2a2a', color: accent }}
                   disabled={isCurrentPeriod}
@@ -1528,7 +1526,7 @@ function WeeklyScreen({
                       })}
                     </div>
                   );
-            React.Fragment    })}
+                })}
               </div>
             </div>
           </>
