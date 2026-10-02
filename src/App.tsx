@@ -6,7 +6,6 @@ import {
   IconBack,
   IconCalendar,
   IconDumbbell,
-  IconFlash,
   IconGear,
   IconHome,
   IconPause,
@@ -303,7 +302,6 @@ function resolveWeekDays(
   return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
 }
 
-
 const initialCircuits: Circuit[] = [
   {
     color: '#FF6B35',
@@ -534,7 +532,6 @@ const Tag = ({ label }: { label: string }) => (
   </span>
 );
 
-
 function Stepper({
   min = 0,
   onChange,
@@ -629,7 +626,7 @@ function HomeScreen({
         </button>
       </div>
 
-      {todayProgram && !todayProgram.isRest && (
+      {todayProgram && (
         <div
           className="mx-5 mb-5 rounded-2xl overflow-hidden"
           style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
@@ -641,23 +638,28 @@ function HomeScreen({
                 Aujourd'hui · {DAY_LABELS[todayIndex]}
               </p>
               <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                {todayProgram.circuit}
+                {todayProgram.isRest ? 'Repos' : todayProgram.circuit}
               </h2>
               <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                {todayProgram.exercises} exercices · Modifier
+                {todayProgram.isRest
+                  ? 'Modifier'
+                  : `${todayProgram.exercises} exercices · Modifier`}
               </p>
             </button>
-            <button
-              className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
-              style={{ backgroundColor: '#0d0d0d' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onGoToTimer();
-              }}>
-              <span style={{ color: accent, marginLeft: 3 }}>
-                <IconPlay />
-              </span>
-            </button>
+            {!todayProgram.isRest && (
+              <button
+                aria-label="Lancer la séance"
+                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
+                style={{ backgroundColor: '#0d0d0d' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onGoToTimer();
+                }}>
+                <span style={{ color: accent, marginLeft: 3 }}>
+                  <IconPlay />
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -691,14 +693,6 @@ function HomeScreen({
                 {nextSession.exercises} exercices
               </p>
             </div>
-            <button
-              className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-95"
-              style={{ backgroundColor: accent }}
-              onClick={onGoToTimer}>
-              <span style={{ color: '#0d0d0d', marginLeft: 2 }}>
-                <IconPlay />
-              </span>
-            </button>
           </div>
         </div>
       )}
@@ -813,7 +807,6 @@ function HomeScreen({
     </div>
   );
 }
-
 
 // ─── Circuits Screen ──────────────────────────────────────────────────────────
 
@@ -1314,19 +1307,91 @@ function CreateCircuitScreen({
 
 // ─── Timer Screen ─────────────────────────────────────────────────────────────
 
+type TimerPhase = 'work' | 'rest' | 'interCycleRest';
+
+type TimerStep = {
+  cycle: number;
+  round: number;
+  phase: TimerPhase;
+  seconds: number;
+  done: boolean;
+};
+
+function getExerciseIndex(round: number, exerciseCount: number): number {
+  return (round - 1) % Math.max(1, exerciseCount);
+}
+
+function phaseDuration(
+  phase: TimerPhase,
+  workTime: number,
+  restTime: number,
+  interCycleRest: number,
+): number {
+  if (phase === 'work') return workTime;
+  if (phase === 'rest') return restTime;
+  return interCycleRest;
+}
+
+function advanceTimerStep(
+  state: TimerStep,
+  totalRounds: number,
+  totalCycles: number,
+  workTime: number,
+  restTime: number,
+  interCycleRest: number,
+): TimerStep {
+  if (state.done) return state;
+
+  if (state.phase === 'work') {
+    const isLastWork = state.cycle >= totalCycles && state.round >= totalRounds;
+    if (isLastWork) {
+      return { ...state, done: true, seconds: 0 };
+    }
+    return { ...state, phase: 'rest', seconds: restTime };
+  }
+
+  if (state.phase === 'rest') {
+    if (state.round < totalRounds) {
+      return {
+        ...state,
+        round: state.round + 1,
+        phase: 'work',
+        seconds: workTime,
+      };
+    }
+    if (state.cycle < totalCycles) {
+      return {
+        ...state,
+        phase: 'interCycleRest',
+        seconds: interCycleRest,
+      };
+    }
+    return { ...state, done: true, seconds: 0 };
+  }
+
+  return {
+    ...state,
+    cycle: state.cycle + 1,
+    round: 1,
+    phase: 'work',
+    seconds: workTime,
+  };
+}
+
 function TimerScreen({
   accent,
   circuit,
   exercises,
-  onBack,
+  onClose,
 }: {
-  onBack: () => void;
+  onClose: () => void;
   circuit?: Circuit;
   exercises: Exercise[];
   accent: string;
 }) {
   const WORK_TIME = circuit?.exerciseTime ?? 45;
   const REST_TIME = circuit?.restBetweenExercises ?? 15;
+  const INTER_CYCLE_REST = circuit?.restBetweenCycles ?? 60;
   const TOTAL_ROUNDS = circuit?.rounds ?? 4;
   const TOTAL_CYCLES = circuit?.cycles ?? 6;
 
@@ -1334,37 +1399,71 @@ function TimerScreen({
     ? circuit.exerciseIds.map((id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice')
     : ['Burpees', 'Tractions', 'Squat sauté', 'Gainage planche', 'Fentes marchées'];
 
+  const [cycle, setCycle] = useState(1);
+  const [round, setRound] = useState(1);
+  const [phase, setPhase] = useState<TimerPhase>('work');
   const [seconds, setSeconds] = useState(WORK_TIME);
   const [isRunning, setIsRunning] = useState(false);
-  const [isWork, setIsWork] = useState(true);
-  const [round, setRound] = useState(1);
-  const [cycle, setCycle] = useState(1);
   const [done, setDone] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const exerciseIndex = (cycle - 1) % Math.max(1, exerciseNames.length);
+  const startedAtRef = useRef<number | null>(null);
+
+  const exerciseIndex = getExerciseIndex(round, exerciseNames.length);
+  const phaseMax = phaseDuration(phase, WORK_TIME, REST_TIME, INTER_CYCLE_REST);
+  const isWork = phase === 'work';
+
+  const applyStep = (next: TimerStep) => {
+    setCycle(next.cycle);
+    setRound(next.round);
+    setPhase(next.phase);
+    setSeconds(next.seconds);
+    setDone(next.done);
+    if (next.done) {
+      setIsRunning(false);
+      if (startedAtRef.current !== null) {
+        setElapsedSec(Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000)));
+      }
+    }
+  };
+
+  const goNext = () => {
+    applyStep(
+      advanceTimerStep(
+        { cycle, round, phase, seconds, done },
+        TOTAL_ROUNDS,
+        TOTAL_CYCLES,
+        WORK_TIME,
+        REST_TIME,
+        INTER_CYCLE_REST,
+      ),
+    );
+  };
 
   useEffect(() => {
     if (isRunning && !done) {
       intervalRef.current = setInterval(() => {
         setSeconds((s) => {
           if (s <= 1) {
-            if (isWork) {
-              setIsWork(false);
-              return REST_TIME;
-            }
-            if (cycle >= TOTAL_CYCLES && round >= TOTAL_ROUNDS) {
+            const next = advanceTimerStep(
+              { cycle, round, phase, seconds: s, done },
+              TOTAL_ROUNDS,
+              TOTAL_CYCLES,
+              WORK_TIME,
+              REST_TIME,
+              INTER_CYCLE_REST,
+            );
+            setCycle(next.cycle);
+            setRound(next.round);
+            setPhase(next.phase);
+            setDone(next.done);
+            if (next.done) {
               setIsRunning(false);
-              setDone(true);
-              return 0;
+              if (startedAtRef.current !== null) {
+                setElapsedSec(Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000)));
+              }
             }
-            if (cycle >= TOTAL_CYCLES) {
-              setRound((r) => r + 1);
-              setCycle(1);
-            } else {
-              setCycle((c) => c + 1);
-            }
-            setIsWork(true);
-            return WORK_TIME;
+            return next.seconds;
           }
           return s - 1;
         });
@@ -1373,20 +1472,126 @@ function TimerScreen({
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isRunning, isWork, cycle, round, done, WORK_TIME, REST_TIME, TOTAL_ROUNDS, TOTAL_CYCLES]);
+  }, [
+    isRunning,
+    phase,
+    cycle,
+    round,
+    done,
+    WORK_TIME,
+    REST_TIME,
+    INTER_CYCLE_REST,
+    TOTAL_ROUNDS,
+    TOTAL_CYCLES,
+  ]);
 
   const pad = (n: number) => String(n).padStart(2, '0');
-  const progress = seconds / (isWork ? WORK_TIME : REST_TIME);
+  const formatDuration = (totalSec: number) =>
+    `${pad(Math.floor(totalSec / 60))}:${pad(totalSec % 60)}`;
+  const progress = phaseMax > 0 ? seconds / phaseMax : 0;
   const circumference = 2 * Math.PI * 88;
 
   const handleReset = () => {
+    if (done) return;
+    setCycle(1);
+    setRound(1);
+    setPhase('work');
     setSeconds(WORK_TIME);
     setIsRunning(false);
-    setIsWork(true);
-    setRound(1);
-    setCycle(1);
     setDone(false);
+    setElapsedSec(0);
+    startedAtRef.current = null;
   };
+
+  const handlePlayPause = () => {
+    if (done) return;
+    setIsRunning((running) => {
+      if (!running && startedAtRef.current === null) {
+        startedAtRef.current = Date.now();
+      }
+      return !running;
+    });
+  };
+
+  const phaseLabel =
+    phase === 'work' ? 'Travail' : phase === 'rest' ? 'Repos' : 'Repos inter-cycle';
+
+  if (done) {
+    return (
+      <div
+        className="flex flex-col h-full"
+        style={{ background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)' }}>
+        <div className="px-5 pt-8 pb-4 text-center">
+          <p className="font-900 text-sm" style={{ color: accent }}>
+            {circuit?.name ?? 'Séance'}
+          </p>
+          <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+            Séance terminée
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 pb-6">
+          <div
+            className="rounded-2xl p-5 mb-4 text-center"
+            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            <p className="text-4xl font-900 mb-2" style={{ color: accent }}>
+              ✓
+            </p>
+            <p className="text-xl font-900">Circuit complété</p>
+            <p className="text-sm font-600 mt-2" style={{ color: '#888' }}>
+              Durée {formatDuration(elapsedSec)}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div
+              className="rounded-xl p-3 text-center"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <p className="text-2xl font-900" style={{ color: accent }}>
+                {TOTAL_CYCLES}
+              </p>
+              <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
+                Cycles
+              </p>
+            </div>
+            <div
+              className="rounded-xl p-3 text-center"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <p className="text-2xl font-900" style={{ color: '#fff' }}>
+                {TOTAL_ROUNDS}
+              </p>
+              <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
+                Rounds / cycle
+              </p>
+            </div>
+          </div>
+
+          <p
+            className="text-xs font-800 tracking-widest uppercase mb-2.5"
+            style={{ color: '#555' }}>
+            Exercices
+          </p>
+          <div className="space-y-2 mb-6">
+            {exerciseNames.map((name, i) => (
+              <div
+                key={`${name}-${i}`}
+                className="rounded-xl px-4 py-3 font-800 text-sm"
+                style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                {name}
+              </div>
+            ))}
+          </div>
+
+          <button
+            className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+            style={{ backgroundColor: accent, color: '#0d0d0d' }}
+            onClick={onClose}>
+            Fermer
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1394,10 +1599,11 @@ function TimerScreen({
       style={{ background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)' }}>
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <button
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: '#1a1a1a' }}
-          onClick={onBack}>
-          <IconBack />
+          aria-label="Fermer"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-xl leading-none font-900"
+          style={{ backgroundColor: '#1a1a1a', color: '#888' }}
+          onClick={onClose}>
+          ×
         </button>
         <div className="text-center">
           <p className="font-900 text-sm" style={{ color: accent }}>
@@ -1457,7 +1663,7 @@ function TimerScreen({
             backgroundColor: isWork ? withAlpha(accent, 0.12) : '#FF6B3520',
             color: isWork ? accent : '#FF6B35',
           }}>
-          {done ? 'Terminé !' : isWork ? 'Travail' : 'Repos'}
+          {phaseLabel}
         </span>
       </div>
 
@@ -1478,29 +1684,30 @@ function TimerScreen({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span
-              className="font-900 leading-none"
-              style={{ color: done ? accent : '#fff', fontSize: 54 }}>
-              {done ? '✓' : `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`}
+            <span className="font-900 leading-none" style={{ color: '#fff', fontSize: 54 }}>
+              {`${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`}
             </span>
-            {!done && (
-              <span className="text-sm font-700 mt-1" style={{ color: '#555' }}>
-                {isWork ? 'secondes' : 'récupération'}
-              </span>
-            )}
+            <span className="text-sm font-700 mt-1" style={{ color: '#555' }}>
+              {isWork ? 'secondes' : 'récupération'}
+            </span>
           </div>
         </div>
 
         <div className="mt-6 text-center px-8">
           <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: '#555' }}>
-            Exercice actuel
+            {phase === 'interCycleRest' ? 'Entre cycles' : 'Exercice actuel'}
           </p>
           <p className="text-xl font-900">
-            {done ? 'Circuit complété !' : exerciseNames[exerciseIndex]}
+            {phase === 'interCycleRest' ? 'Repos' : exerciseNames[exerciseIndex]}
           </p>
-          {!done && exerciseNames.length > 1 && (
+          {phase !== 'interCycleRest' && exerciseNames.length > 1 && (
             <p className="text-sm font-600 mt-1" style={{ color: '#555' }}>
-              Suivant : {exerciseNames[(exerciseIndex + 1) % exerciseNames.length]}
+              Suivant :{' '}
+              {phase === 'work'
+                ? exerciseNames[(exerciseIndex + 1) % exerciseNames.length]
+                : exerciseNames[
+                    getExerciseIndex(round < TOTAL_ROUNDS ? round + 1 : 1, exerciseNames.length)
+                  ]}
             </p>
           )}
         </div>
@@ -1508,26 +1715,11 @@ function TimerScreen({
 
       <div className="px-5 pb-10 flex items-center justify-center gap-6">
         <button
-          className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95"
-          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
-          onClick={() => {
-            setCycle((c) => Math.max(1, c - 1));
-            setSeconds(WORK_TIME);
-            setIsWork(true);
-          }}>
-          <span style={{ transform: 'scaleX(-1)' }}>
-            <IconSkip />
-          </span>
-        </button>
-        <button
+          aria-label={isRunning ? 'Pause' : 'Lecture'}
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-95"
           style={{ backgroundColor: accent, color: '#0d0d0d' }}
-          onClick={() => {
-            done ? handleReset() : setIsRunning((r) => !r);
-          }}>
-          {done ? (
-            <span className="text-2xl font-900">↺</span>
-          ) : isRunning ? (
+          onClick={handlePlayPause}>
+          {isRunning ? (
             <IconPause />
           ) : (
             <span style={{ marginLeft: 4 }}>
@@ -1536,17 +1728,10 @@ function TimerScreen({
           )}
         </button>
         <button
+          aria-label="Exercice suivant"
           className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
-          onClick={() => {
-            if (cycle < TOTAL_CYCLES) setCycle((c) => c + 1);
-            else if (round < TOTAL_ROUNDS) {
-              setRound((r) => r + 1);
-              setCycle(1);
-            }
-            setSeconds(WORK_TIME);
-            setIsWork(true);
-          }}>
+          onClick={goNext}>
           <IconSkip />
         </button>
       </div>
@@ -1840,7 +2025,6 @@ function BottomNav({
     { icon: <IconHome />, id: 'home', label: 'Accueil' },
     { icon: <IconCalendar />, id: 'weekly', label: 'Programme' },
     { icon: <IconDumbbell />, id: 'circuits', label: 'Circuits' },
-    { icon: <IconFlash />, id: 'timer', label: 'Séance' },
   ];
   return (
     <div
@@ -1879,6 +2063,7 @@ export default function App() {
   });
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [editingCircuitId, setEditingCircuitId] = useState<string | null>(null);
+  const [sessionCircuit, setSessionCircuit] = useState<Circuit | undefined>();
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', profile.accentColor);
@@ -1890,6 +2075,12 @@ export default function App() {
   };
   const handleBack = () => {
     setScreen(prevScreen === screen ? 'home' : prevScreen);
+  };
+
+  const startSession = (circuit?: Circuit) => {
+    if (!circuit) return;
+    setSessionCircuit(circuit);
+    navigate('timer');
   };
 
   const goToCreateCircuit = (id?: string) => {
@@ -1926,7 +2117,7 @@ export default function App() {
     ? circuits.find((c) => c.id === editingCircuitId)
     : undefined;
   const accent = profile.accentColor;
-  const noNav = screen === 'create-circuit' || screen === 'profile';
+  const noNav = screen === 'create-circuit' || screen === 'profile' || screen === 'timer';
 
   return (
     <div
@@ -1950,7 +2141,7 @@ export default function App() {
                 navigate('profile');
               }}
               onGoToTimer={() => {
-                navigate('timer');
+                startSession(todayCircuit);
               }}
               onGoToWeekly={() => {
                 navigate('weekly');
@@ -1964,6 +2155,9 @@ export default function App() {
               weekPrograms={weekPrograms}
               onCreateCircuit={() => {
                 goToCreateCircuit();
+              }}
+              onStartSession={(circuitId) => {
+                startSession(circuits.find((c) => c.id === circuitId));
               }}
               onUpdateDay={handleUpdateDay}
             />
@@ -1993,9 +2187,9 @@ export default function App() {
           {screen === 'timer' && (
             <TimerScreen
               accent={accent}
-              circuit={todayCircuit}
+              circuit={sessionCircuit ?? todayCircuit}
               exercises={exercises}
-              onBack={handleBack}
+              onClose={handleBack}
             />
           )}
           {screen === 'profile' && (

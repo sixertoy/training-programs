@@ -89,7 +89,7 @@ test.describe('Visual snapshots — main screens', () => {
 
   test('Séance', async ({ page }) => {
     await openApp(page);
-    await page.getByRole('button', { name: 'Séance' }).click();
+    await page.getByRole('button', { name: 'Lancer la séance' }).click();
     await expect(page.getByText('Circuit du jour')).toBeVisible();
     await expect(page).toHaveScreenshot('seance.png');
   });
