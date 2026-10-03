@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 
-import { IconPlus } from './assets/icons';
+import { IconPlus } from '../../assets/icons';
 
 const ACCENT_PRESETS = ['#CBFF47', '#FF6B35', '#4ECDC4', '#A78BFA', '#FF6B6B'] as const;
 
@@ -9,7 +9,7 @@ interface AccentColorPickerProps {
   onChange: (color: string) => void;
 }
 
-export default function AccentColorPicker({ onChange, value }: AccentColorPickerProps) {
+export const AccentColorPicker = ({ onChange, value }: AccentColorPickerProps) => {
   const customColorRef = useRef<HTMLInputElement>(null);
   const normalized = value.toUpperCase();
   const isCustom = !(ACCENT_PRESETS as readonly string[]).includes(normalized);
@@ -58,4 +58,6 @@ export default function AccentColorPicker({ onChange, value }: AccentColorPicker
       ))}
     </div>
   );
-}
+};
+
+AccentColorPicker.displayName = 'AccentColorPicker';

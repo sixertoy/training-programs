@@ -19,7 +19,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import {
   IconCalendar,
@@ -29,8 +29,8 @@ import {
   IconPlay,
   IconPlus,
   IconWeek,
-} from './assets/icons';
-import { ViewMode } from './enums';
+} from '../../assets/icons';
+import { ViewMode } from '../../enums';
 
 interface DayProgram {
   day: string;
@@ -71,6 +71,109 @@ interface WeekData {
   days: DayProgram[];
   stats: { sessions: number; totalMin: number; volume: string };
 }
+
+
+
+const WEEK_HISTORY: WeekData[] = [
+  {
+    days: [
+      {
+        circuit: 'Force Upper',
+        circuitId: 'c1',
+        day: 'Lundi',
+        exercises: 3,
+        isRest: false,
+        short: 'LUN',
+      },
+      {
+        circuit: 'Cardio HIIT',
+        circuitId: 'c2',
+        day: 'Mardi',
+        exercises: 3,
+        isRest: false,
+        short: 'MAR',
+      },
+      { day: 'Mercredi', isRest: true, short: 'MER' },
+      {
+        circuit: 'Force Upper',
+        circuitId: 'c1',
+        day: 'Jeudi',
+        exercises: 3,
+        isRest: false,
+        short: 'JEU',
+      },
+      {
+        circuit: 'Full Body',
+        circuitId: 'c3',
+        day: 'Vendredi',
+        exercises: 6,
+        isRest: false,
+        short: 'VEN',
+      },
+      { day: 'Samedi', isRest: true, short: 'SAM' },
+      { day: 'Dimanche', isRest: true, short: 'DIM' },
+    ],
+    isoWeek: 37,
+    stats: { sessions: 4, totalMin: 187, volume: '12 400 kg' },
+    year: 2026,
+  },
+  {
+    days: [
+      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
+      { day: 'Mardi', isRest: true, short: 'MAR' },
+      { circuit: 'Pull Day', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
+      { day: 'Jeudi', isRest: true, short: 'JEU' },
+      { circuit: 'Leg Day', day: 'Vendredi', exercises: 6, isRest: false, short: 'VEN' },
+      { circuit: 'Cardio HIIT', day: 'Samedi', exercises: 4, isRest: false, short: 'SAM' },
+      { day: 'Dimanche', isRest: true, short: 'DIM' },
+    ],
+    isoWeek: 36,
+    stats: { sessions: 4, totalMin: 162, volume: '10 800 kg' },
+    year: 2026,
+  },
+  {
+    days: [
+      { day: 'Lundi', isRest: true, short: 'LUN' },
+      { circuit: 'Force Upper', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
+      { circuit: 'Cardio HIIT', day: 'Mercredi', exercises: 6, isRest: false, short: 'MER' },
+      { day: 'Jeudi', isRest: true, short: 'JEU' },
+      { circuit: 'Full Body', day: 'Vendredi', exercises: 7, isRest: false, short: 'VEN' },
+      { day: 'Samedi', isRest: true, short: 'SAM' },
+      { circuit: 'Mobilité', day: 'Dimanche', exercises: 3, isRest: false, short: 'DIM' },
+    ],
+    isoWeek: 35,
+    stats: { sessions: 4, totalMin: 195, volume: '11 200 kg' },
+    year: 2026,
+  },
+  {
+    days: [
+      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
+      { circuit: 'Pull Day', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
+      { day: 'Mercredi', isRest: true, short: 'MER' },
+      { circuit: 'Leg Day', day: 'Jeudi', exercises: 6, isRest: false, short: 'JEU' },
+      { day: 'Vendredi', isRest: true, short: 'VEN' },
+      { circuit: 'Full Body', day: 'Samedi', exercises: 7, isRest: false, short: 'SAM' },
+      { day: 'Dimanche', isRest: true, short: 'DIM' },
+    ],
+    isoWeek: 34,
+    stats: { sessions: 4, totalMin: 210, volume: '13 600 kg' },
+    year: 2026,
+  },
+  {
+    days: [
+      { circuit: 'Cardio HIIT', day: 'Lundi', exercises: 6, isRest: false, short: 'LUN' },
+      { day: 'Mardi', isRest: true, short: 'MAR' },
+      { circuit: 'Force Upper', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
+      { day: 'Jeudi', isRest: true, short: 'JEU' },
+      { circuit: 'Force Lower', day: 'Vendredi', exercises: 4, isRest: false, short: 'VEN' },
+      { circuit: 'Mobilité', day: 'Samedi', exercises: 3, isRest: false, short: 'SAM' },
+      { day: 'Dimanche', isRest: true, short: 'DIM' },
+    ],
+    isoWeek: 33,
+    stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
+    year: 2026,
+  },
+];
 
 function withAlpha(hex: string, opacity: number): string {
   const alpha = Math.round(opacity * 255)
@@ -199,11 +302,12 @@ function computePeriodStats(
   let exercises = 0;
   for (const date of days) {
     const day = getDayProgram(date, weekPrograms);
-    if (day.isRest) continue;
-    sessions += 1;
-    exercises += day.exercises ?? 0;
-    const circuit = day.circuitId ? circuits.find((c) => c.id === day.circuitId) : undefined;
-    if (circuit) totalMin += circuitDurationMin(circuit);
+    if (!day.isRest) {
+      sessions += 1;
+      exercises += day.exercises ?? 0;
+      const circuit = day.circuitId ? circuits.find((c) => c.id === day.circuitId) : undefined;
+      if (circuit) totalMin += circuitDurationMin(circuit);
+    }
   }
   return { exercises, sessions, totalMin };
 }
@@ -237,107 +341,6 @@ function computeMonthStats(
     circuits,
   );
 }
-
-const WEEK_HISTORY: WeekData[] = [
-  {
-    days: [
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Lundi',
-        exercises: 3,
-        isRest: false,
-        short: 'LUN',
-      },
-      {
-        circuit: 'Cardio HIIT',
-        circuitId: 'c2',
-        day: 'Mardi',
-        exercises: 3,
-        isRest: false,
-        short: 'MAR',
-      },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Jeudi',
-        exercises: 3,
-        isRest: false,
-        short: 'JEU',
-      },
-      {
-        circuit: 'Full Body',
-        circuitId: 'c3',
-        day: 'Vendredi',
-        exercises: 6,
-        isRest: false,
-        short: 'VEN',
-      },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 37,
-    stats: { sessions: 4, totalMin: 187, volume: '12 400 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Pull Day', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Leg Day', day: 'Vendredi', exercises: 6, isRest: false, short: 'VEN' },
-      { circuit: 'Cardio HIIT', day: 'Samedi', exercises: 4, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 36,
-    stats: { sessions: 4, totalMin: 162, volume: '10 800 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { day: 'Lundi', isRest: true, short: 'LUN' },
-      { circuit: 'Force Upper', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { circuit: 'Cardio HIIT', day: 'Mercredi', exercises: 6, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Full Body', day: 'Vendredi', exercises: 7, isRest: false, short: 'VEN' },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { circuit: 'Mobilité', day: 'Dimanche', exercises: 3, isRest: false, short: 'DIM' },
-    ],
-    isoWeek: 35,
-    stats: { sessions: 4, totalMin: 195, volume: '11 200 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { circuit: 'Pull Day', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      { circuit: 'Leg Day', day: 'Jeudi', exercises: 6, isRest: false, short: 'JEU' },
-      { day: 'Vendredi', isRest: true, short: 'VEN' },
-      { circuit: 'Full Body', day: 'Samedi', exercises: 7, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 34,
-    stats: { sessions: 4, totalMin: 210, volume: '13 600 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Cardio HIIT', day: 'Lundi', exercises: 6, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Force Upper', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Force Lower', day: 'Vendredi', exercises: 4, isRest: false, short: 'VEN' },
-      { circuit: 'Mobilité', day: 'Samedi', exercises: 3, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 33,
-    stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
-    year: 2026,
-  },
-];
 
 function PeriodStatsRow({
   accent,
@@ -576,7 +579,7 @@ function DayAssignSheet({
   );
 }
 
-export default function ProgrammePage({
+export function ProgrammePage({
   accent,
   circuits,
   onCreateCircuit,
@@ -615,7 +618,7 @@ export default function ProgrammePage({
   const headerDateTitle = format(today, 'd MMMM yyyy', { locale: fr });
   const todayIndex = getTodayIndex(today);
   const todayProgram = resolveWeekDays(getWeekStart(0), weekPrograms)[todayIndex];
-  const todayCircuitId = todayProgram?.circuitId;
+  const todayCircuitId = todayProgram.circuitId;
   const canStartToday =
     todayProgram !== undefined && !todayProgram.isRest && todayCircuitId !== undefined;
 
@@ -649,8 +652,8 @@ export default function ProgrammePage({
       style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
       {(
         [
-          { id: ViewMode.WEEK, label: 'Semaine', icon: <IconWeek /> },
-          { id: ViewMode.MONTH, label: 'Mois', icon: <IconCalendar /> },
+          { icon: <IconWeek />, id: ViewMode.WEEK, label: 'Semaine' },
+          { icon: <IconCalendar />, id: ViewMode.MONTH, label: 'Mois' },
         ] as const
       ).map((tab) => {
         const active = viewMode === tab.id;
@@ -691,7 +694,7 @@ export default function ProgrammePage({
           </div>
         </div>
 
-        {canStartToday && todayProgram && todayCircuitId ? (
+        {canStartToday && todayCircuitId ? (
           <div
             className="mx-5 mb-4 rounded-2xl overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
@@ -725,7 +728,7 @@ export default function ProgrammePage({
         ) : null}
 
         {viewMode === ViewMode.WEEK && (
-          <>
+          <React.Fragment>
             <div
               className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
@@ -750,10 +753,10 @@ export default function ProgrammePage({
                 <button
                   aria-label="Aujourd'hui"
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
-                  style={{ backgroundColor: '#2a2a2a', color: accent }}
                   disabled={isCurrentPeriod}
+                  style={{ backgroundColor: '#2a2a2a', color: accent }}
                   onClick={goToToday}>
-                  Aujourd'hui
+                  Aujourd&apos;hui
                 </button>
               </div>
               <button
@@ -854,11 +857,11 @@ export default function ProgrammePage({
                 );
               })}
             </div>
-          </>
+          </React.Fragment>
         )}
 
         {viewMode === ViewMode.MONTH && (
-          <>
+          <React.Fragment>
             <div className="mx-5 mb-4 flex items-center justify-between">
               <button
                 aria-label="Mois précédent"
@@ -876,10 +879,10 @@ export default function ProgrammePage({
                 <button
                   aria-label="Aujourd'hui"
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
-                  style={{ backgroundColor: '#2a2a2a', color: accent }}
                   disabled={isCurrentPeriod}
+                  style={{ backgroundColor: '#2a2a2a', color: accent }}
                   onClick={goToToday}>
-                  Aujourd'hui
+                  Aujourd&apos;hui
                 </button>
               </div>
               <button
@@ -898,14 +901,17 @@ export default function ProgrammePage({
             <div className="px-5 mb-6">
               <div className="grid gap-1" style={{ gridTemplateColumns: '28px repeat(7, 1fr)' }}>
                 <div />
-                {DAY_LETTER_HEADERS.map((letter, i) => (
-                  <div
-                    key={`${letter}-${i}`}
-                    className="text-center text-xs font-800 py-1"
-                    style={{ color: '#555' }}>
-                    {letter}
-                  </div>
-                ))}
+                {DAY_LETTER_HEADERS.map((letter, i) => {
+                  const key = `${letter}-${i}`;
+                  return (
+                    <div
+                      key={key}
+                      className="text-center text-xs font-800 py-1"
+                      style={{ color: '#555' }}>
+                      {letter}
+                    </div>
+                  )
+                })}
                 {Array.from({ length: 6 }, (_, weekRow) => {
                   const rowStart = monthGridDays[weekRow * 7];
                   const weekNumber = getISOWeek(rowStart);
@@ -958,7 +964,7 @@ export default function ProgrammePage({
                 })}
               </div>
             </div>
-          </>
+          </React.Fragment>
         )}
       </div>
 

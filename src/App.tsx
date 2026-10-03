@@ -12,10 +12,10 @@ import {
   IconRotateCcw,
   IconUser,
 } from './assets/icons';
-import AccentColorPicker from './AccentColorPicker';
-import BottomNav from './BottomNav';
+import { AccentColorPicker } from './components/accent-color-picker';
+import { BottomNav } from './components/bottom-nav';
+import { ProgrammePage } from './components/programme-page';
 import freeTabataDefaults from './config/tabata-free.json';
-import ProgrammePage from './ProgrammePage';
 import { Gender, Screen, TabataMode, TimerPhase } from './enums';
 
 enum AccentColor {
@@ -47,9 +47,9 @@ function clamp01(n: number): number {
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const h = hex.replace('#', '').slice(0, 6);
   return {
-    r: parseInt(h.slice(0, 2), 16),
-    g: parseInt(h.slice(2, 4), 16),
     b: parseInt(h.slice(4, 6), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    r: parseInt(h.slice(0, 2), 16),
   };
 }
 
@@ -62,7 +62,7 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
-  const { r, g, b } = hexToRgb(hex);
+  const { b, g, r } = hexToRgb(hex);
   const rn = r / 255;
   const gn = g / 255;
   const bn = b / 255;
@@ -80,7 +80,7 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
     else h = ((rn - gn) / d + 4) / 6;
   }
 
-  return { h, s, l };
+  return { h, l, s };
 }
 
 function hslToHex(h: number, s: number, l: number): string {
@@ -109,14 +109,14 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 function shiftAccentLightness(hex: string, amount = 0.28): string {
-  const { h, s, l } = hexToHsl(hex);
+  const { h, l, s } = hexToHsl(hex);
   const nextL = clamp01(l > 0.5 ? l - amount : l + amount);
   return hslToHex(h, s, nextL);
 }
 
 /** Même famille que l’accent : décalage de teinte + luminosité (comme la préparation). */
 function shiftAccentHue(hex: string, hueDeg: number, lightnessAmount = 0.28): string {
-  const { h, s, l } = hexToHsl(hex);
+  const { h, l, s } = hexToHsl(hex);
   const nextH = ((((h * 360 + hueDeg) % 360) + 360) % 360) / 360;
   const nextL = clamp01(l > 0.5 ? l - lightnessAmount : l + lightnessAmount);
   return hslToHex(nextH, s, nextL);
@@ -342,33 +342,6 @@ const defaultProfile: UserProfile = {
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
 
-function getTodayIndex(date: Date = new Date()): number {
-  return (getDay(date) + 6) % 7;
-}
-
-function getWeekStart(weekOffset: number, from: Date = new Date()): Date {
-  return startOfWeek(addWeeks(from, -weekOffset), WEEK_START_OPTIONS);
-}
-
-function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undefined {
-  const isoWeek = getISOWeek(weekStart);
-  const year = getISOWeekYear(weekStart);
-  return history.find((week) => week.isoWeek === isoWeek && week.year === year);
-}
-
-function getWeekKey(weekStart: Date): string {
-  return `${getISOWeekYear(weekStart)}-W${getISOWeek(weekStart)}`;
-}
-
-function resolveWeekDays(
-  weekStart: Date,
-  weekPrograms: Record<string, DayProgram[]>,
-): DayProgram[] {
-  const key = getWeekKey(weekStart);
-  if (weekPrograms[key]) return weekPrograms[key];
-  return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
-}
-
 const initialCircuits: Circuit[] = [
   {
     color: '#FF6B35',
@@ -589,6 +562,35 @@ const CIRCUIT_MUSCLES: Record<string, string[]> = {
   push_day: ['shoulders', 'chest', 'arms'],
 };
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function getTodayIndex(date: Date = new Date()): number {
+  return (getDay(date) + 6) % 7;
+}
+
+function getWeekStart(weekOffset: number, from: Date = new Date()): Date {
+  return startOfWeek(addWeeks(from, -weekOffset), WEEK_START_OPTIONS);
+}
+
+function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undefined {
+  const isoWeek = getISOWeek(weekStart);
+  const year = getISOWeekYear(weekStart);
+  return history.find((week) => week.isoWeek === isoWeek && week.year === year);
+}
+
+function getWeekKey(weekStart: Date): string {
+  return `${getISOWeekYear(weekStart)}-W${getISOWeek(weekStart)}`;
+}
+
+function resolveWeekDays(
+  weekStart: Date,
+  weekPrograms: Record<string, DayProgram[]>,
+): DayProgram[] {
+  const key = getWeekKey(weekStart);
+  if (weekPrograms[key]) return weekPrograms[key];
+  return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
+}
+
 function humanizeKey(key: string): string {
   if (!key) return key;
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' ');
@@ -599,18 +601,6 @@ function exerciseColor(exercise: Exercise): string {
 }
 
 // ─── Shared Components ────────────────────────────────────────────────────────
-
-const Tag = ({ label }: { label: string }) => (
-  <span
-    className="text-xs font-bold px-2.5 py-1 rounded-full"
-    style={{
-      backgroundColor: `${TAG_COLORS[label]}30`,
-      border: `1px solid ${TAG_COLORS[label]}50`,
-      color: TAG_COLORS[label],
-    }}>
-    {humanizeKey(label)}
-  </span>
-);
 
 function Stepper({
   min = 0,
@@ -708,43 +698,42 @@ function HomeScreen({
         </button>
       </div>
 
-      {todayProgram && (
-        <div
-          className="mx-5 mb-5 rounded-2xl overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
-          <div className="p-5 flex items-center justify-between">
-            <button className="text-left flex-1 min-w-0" onClick={onGoToWeekly}>
-              <p
-                className="text-xs font-800 tracking-widest uppercase"
-                style={{ color: '#0d0d0d90' }}>
-                Aujourd'hui · {DAY_LABELS[todayIndex]}
-              </p>
-              <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                {todayProgram.isRest ? 'Repos' : todayProgram.circuit}
-              </h2>
-              <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                {todayProgram.isRest
-                  ? 'Modifier'
-                  : `${todayProgram.exercises} exercices · Modifier`}
-              </p>
+      <div
+        className="mx-5 mb-5 rounded-2xl overflow-hidden"
+        style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
+        <div className="p-5 flex items-center justify-between">
+          <button className="text-left flex-1 min-w-0" onClick={onGoToWeekly}>
+            <p
+              className="text-xs font-800 tracking-widest uppercase"
+              style={{ color: '#0d0d0d90' }}>
+              Aujourd&apos;hui · {DAY_LABELS[todayIndex]}
+            </p>
+            <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
+              {todayProgram.isRest ? 'Repos' : todayProgram.circuit}
+            </h2>
+            <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
+              {todayProgram.isRest
+                ? 'Modifier'
+                // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                : `${todayProgram.exercises} exercices · Modifier`}
+            </p>
+          </button>
+          {!todayProgram.isRest && (
+            <button
+              aria-label="Lancer le tabata"
+              className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
+              style={{ backgroundColor: '#0d0d0d' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onGoToTimer();
+              }}>
+              <span style={{ color: accent, marginLeft: 3 }}>
+                <IconPlay />
+              </span>
             </button>
-            {!todayProgram.isRest && (
-              <button
-                aria-label="Lancer le tabata"
-                className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
-                style={{ backgroundColor: '#0d0d0d' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGoToTimer();
-                }}>
-                <span style={{ color: accent, marginLeft: 3 }}>
-                  <IconPlay />
-                </span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <button
         aria-label="Lancer un Tabata libre"
@@ -1154,11 +1143,15 @@ function CreateCircuitScreen({
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f5f5f5' }}
               type="text"
               value={name}
-              onBlur={(e) => (e.target.style.borderColor = '#2a2a2a')}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#2a2a2a';
+              }}
               onChange={(e) => {
                 setName(e.target.value);
               }}
-              onFocus={(e) => (e.target.style.borderColor = withAlpha(accent, 0.4))}
+              onFocus={(e) => {
+                e.target.style.borderColor = withAlpha(accent, 0.4);
+              }}
             />
           </div>
 
@@ -1223,46 +1216,46 @@ function CreateCircuitScreen({
                 {selectedExercises.map((e, i) => {
                   const color = exerciseColor(e);
                   return (
-                  <div
-                    key={e.id}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
                     <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
-                      style={{ backgroundColor: withAlpha(color, 0.15), color }}>
-                      {i + 1}
+                      key={e.id}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                      style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
+                        style={{ backgroundColor: withAlpha(color, 0.15), color }}>
+                        {i + 1}
+                      </div>
+                      <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
+                          style={{ backgroundColor: '#2a2a2a', color: i > 0 ? '#888' : '#333' }}
+                          onClick={() => {
+                            moveExercise(i, -1);
+                          }}>
+                          ↑
+                        </button>
+                        <button
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
+                          style={{
+                            backgroundColor: '#2a2a2a',
+                            color: i < exerciseIds.length - 1 ? '#888' : '#333',
+                          }}
+                          onClick={() => {
+                            moveExercise(i, 1);
+                          }}>
+                          ↓
+                        </button>
+                        <button
+                          className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
+                          style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
+                          onClick={() => {
+                            setExerciseIds(exerciseIds.filter((id) => id !== e.id));
+                          }}>
+                          ×
+                        </button>
+                      </div>
                     </div>
-                    <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
-                        style={{ backgroundColor: '#2a2a2a', color: i > 0 ? '#888' : '#333' }}
-                        onClick={() => {
-                          moveExercise(i, -1);
-                        }}>
-                        ↑
-                      </button>
-                      <button
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
-                        style={{
-                          backgroundColor: '#2a2a2a',
-                          color: i < exerciseIds.length - 1 ? '#888' : '#333',
-                        }}
-                        onClick={() => {
-                          moveExercise(i, 1);
-                        }}>
-                        ↓
-                      </button>
-                      <button
-                        className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
-                        style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
-                        onClick={() => {
-                          setExerciseIds(exerciseIds.filter((id) => id !== e.id));
-                        }}>
-                        ×
-                      </button>
-                    </div>
-                  </div>
                   );
                 })}
               </div>
@@ -1394,21 +1387,21 @@ function CreateCircuitScreen({
 
 // ─── Tabata Screen ────────────────────────────────────────────────────────────
 
-type TimerStep = {
+interface TimerStep {
   cycle: number;
   round: number;
   phase: TimerPhase;
   seconds: number;
   done: boolean;
-};
+}
 
-type TimerDurations = {
+interface TimerDurations {
   prepTime: number;
   workTime: number;
   restTime: number;
   interCycleRest: number;
   recoveryTime: number;
-};
+}
 
 function getExerciseIndex(round: number, exerciseCount: number): number {
   return (round - 1) % Math.max(1, exerciseCount);
@@ -1562,7 +1555,7 @@ function TabataScreen({
         setSeconds((s) => {
           if (s <= 1) {
             const next = advanceTimerStep(
-              { cycle, round, phase, seconds: s, done },
+              { cycle, done, phase, round, seconds: s },
               TOTAL_ROUNDS,
               TOTAL_CYCLES,
               durations,
@@ -1636,16 +1629,13 @@ function TabataScreen({
     });
   };
 
-  const phaseLabel =
-    phase === TimerPhase.PREP
-      ? 'Préparation'
-      : phase === TimerPhase.WORK
-        ? 'Travail'
-        : phase === TimerPhase.REST
-          ? 'Repos'
-          : phase === TimerPhase.RECOVERY
-            ? 'Récupération'
-            : 'Repos inter-cycle';
+  const PHASE_LABELLS = {
+    [TimerPhase.PREP]: 'Préparation',
+    [TimerPhase.WORK]: 'Travail',
+    [TimerPhase.REST]: 'Repos',
+    [TimerPhase.RECOVERY]: 'Récupération',
+  } as const;
+  const phaseLabel = PHASE_LABELLS[phase] ?? 'Repos inter-cycle';
 
   const openSheet = () => {
     setDraft(localCircuit);
@@ -1665,32 +1655,33 @@ function TabataScreen({
     .map((id) => exercises.find((e) => e.id === id))
     .filter(Boolean) as Exercise[];
 
-  const nextExerciseName =
-    phase === TimerPhase.PREP
-      ? exerciseNames[0]
-      : phase === TimerPhase.WORK
-        ? exerciseNames[(exerciseIndex + 1) % exerciseNames.length]
-        : exerciseNames[
-            getExerciseIndex(round < TOTAL_ROUNDS ? round + 1 : 1, exerciseNames.length)
-          ];
+  let nextIndex: number;
 
-  const infoContext =
-    phase === TimerPhase.PREP
-      ? 'Préparation'
-      : phase === TimerPhase.RECOVERY
-        ? 'Fin de séance'
-        : phase === TimerPhase.INTER_CYCLE_REST
-          ? 'Entre cycles'
-          : phase === TimerPhase.REST
-            ? 'Repos'
-            : 'Exercice actuel';
+  if (phase === TimerPhase.PREP) {
+    nextIndex = 0;
+  } else if (phase === TimerPhase.WORK) {
+    nextIndex = (exerciseIndex + 1) % exerciseNames.length;
+  } else {
+    const nextRound = round < TOTAL_ROUNDS ? round + 1 : 1;
+    nextIndex = getExerciseIndex(nextRound, exerciseNames.length);
+  }
+  const nextExerciseName = exerciseNames[nextIndex];
 
-  const infoMain =
-    phase === TimerPhase.PREP
-      ? 'Préparez-vous'
-      : isRestPhase
-        ? 'Repos'
-        : exerciseNames[exerciseIndex];
+  const PHASE_LABELS: Partial<Record<TimerPhase, string>> = {
+    [TimerPhase.PREP]: 'Préparation',
+    [TimerPhase.RECOVERY]: 'Fin de séance',
+    [TimerPhase.INTER_CYCLE_REST]: 'Entre cycles',
+    [TimerPhase.REST]: 'Repos',
+  };
+
+  const infoContext = PHASE_LABELS[phase] ?? 'Exercice actuel';
+
+  let infoMain = exerciseNames[exerciseIndex];
+  if (phase === TimerPhase.PREP) {
+    infoMain = 'Préparez-vous';
+  } else if (isRestPhase) {
+    infoMain = 'Repos';
+  }
 
   const showNext =
     (phase === TimerPhase.PREP ||
@@ -1964,14 +1955,17 @@ function TabataScreen({
             Exercices
           </p>
           <div className="space-y-2 mb-6">
-            {exerciseNames.map((name, i) => (
-              <div
-                key={`${name}-${i}`}
-                className="rounded-xl px-4 py-3 font-800 text-sm"
-                style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-                {name}
-              </div>
-            ))}
+            {exerciseNames.map((name, i) => {
+              const key = `${name}-${i}`;
+              return (
+                <div
+                  key={key}
+                  className="rounded-xl px-4 py-3 font-800 text-sm"
+                  style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                  {name}
+                </div>
+              );
+            })}
           </div>
 
           {isFree ? (
@@ -2054,13 +2048,16 @@ function TabataScreen({
               </span>
             </div>
             <div className="flex gap-1 justify-center mt-2">
-              {Array.from({ length: bar.total }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-1.5 flex-1 rounded-full"
-                  style={{ backgroundColor: i < bar.value ? bar.color : '#2a2a2a' }}
-                />
-              ))}
+              {Array.from({ length: bar.total }).map((_, i) => {
+                const key = `${i}`;
+                return (
+                  <div
+                    key={key}
+                    className="h-1.5 flex-1 rounded-full"
+                    style={{ backgroundColor: i < bar.value ? bar.color : '#2a2a2a' }}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}
@@ -2379,7 +2376,7 @@ function ProfileScreen({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Couleur d'accent
+            Couleur d&apos;accent
           </label>
           <AccentColorPicker
             value={draft.accentColor}
@@ -2405,7 +2402,7 @@ function ProfileScreen({
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
-export default function App() {
+export const App = () => {
   const [screen, setScreen] = useState<Screen>(Screen.HOME);
   const [prevScreen, setPrevScreen] = useState<Screen>(Screen.HOME);
   const [exercises] = useState<Exercise[]>(initialExercises);
@@ -2579,4 +2576,6 @@ export default function App() {
       </div>
     </div>
   );
-}
+};
+
+App.displayName = 'App';
