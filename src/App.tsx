@@ -1,5 +1,6 @@
 import { addWeeks, getDay, getISOWeek, getISOWeekYear, startOfWeek } from 'date-fns';
 import { useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { BottomNav } from './components/bottom-nav';
 import { CircuitsPage } from './components/circuits-page';
@@ -9,6 +10,7 @@ import { ProfilePage } from './components/profile-page';
 import { ProgrammePage } from './components/programme-page';
 import { TabataPage } from './components/tabata-page';
 import freeTabataDefaults from './config/tabata-free.json';
+import { SEED_CIRCUIT_IDS, SEED_EXERCISE_IDS } from './data/seed-ids';
 import { WEEK_HISTORY } from './data/week-history';
 import { Gender, Screen, TabataMode, ViewMode } from './enums';
 import type { DayProgram } from './interfaces';
@@ -75,9 +77,13 @@ const initialCircuits: Circuit[] = [
   {
     color: '#FF6B35',
     cycles: 3,
-    exerciseIds: ['4', '2', '1'],
+    exerciseIds: [
+      SEED_EXERCISE_IDS.militaryPress,
+      SEED_EXERCISE_IDS.pullUps,
+      SEED_EXERCISE_IDS.burpees,
+    ],
     exerciseTime: 45,
-    id: 'c1',
+    id: SEED_CIRCUIT_IDS.forceUpper,
     name: 'Force Upper',
     prepTime: 10,
     recoveryTime: 90,
@@ -88,9 +94,13 @@ const initialCircuits: Circuit[] = [
   {
     color: '#C62A47',
     cycles: 4,
-    exerciseIds: ['1', '3', '6'],
+    exerciseIds: [
+      SEED_EXERCISE_IDS.burpees,
+      SEED_EXERCISE_IDS.jumpSquat,
+      SEED_EXERCISE_IDS.walkingLunges,
+    ],
     exerciseTime: 30,
-    id: 'c2',
+    id: SEED_CIRCUIT_IDS.cardioHiit,
     name: 'Cardio HIIT',
     prepTime: 5,
     recoveryTime: 120,
@@ -101,9 +111,16 @@ const initialCircuits: Circuit[] = [
   {
     color: '#1A936F',
     cycles: 3,
-    exerciseIds: ['1', '2', '3', '4', '5', '6'],
+    exerciseIds: [
+      SEED_EXERCISE_IDS.burpees,
+      SEED_EXERCISE_IDS.pullUps,
+      SEED_EXERCISE_IDS.jumpSquat,
+      SEED_EXERCISE_IDS.militaryPress,
+      SEED_EXERCISE_IDS.plank,
+      SEED_EXERCISE_IDS.walkingLunges,
+    ],
     exerciseTime: 40,
-    id: 'c3',
+    id: SEED_CIRCUIT_IDS.fullBody,
     name: 'Full Body',
     prepTime: 15,
     recoveryTime: 90,
@@ -116,37 +133,37 @@ const initialCircuits: Circuit[] = [
 const initialExercises: Exercise[] = [
   {
     description: 'Explosive full-body move chaining squat, push-up and vertical jump.',
-    id: '1',
+    id: SEED_EXERCISE_IDS.burpees,
     name: 'Burpees',
     tags: ['cardio', 'legs', 'chest'],
   },
   {
     description: 'Vertical pull from a bar; back and biceps.',
-    id: '2',
+    id: SEED_EXERCISE_IDS.pullUps,
     name: 'Pull-ups',
     tags: ['back', 'arms'],
   },
   {
     description: 'Deep squat with an explosive jump upward.',
-    id: '3',
+    id: SEED_EXERCISE_IDS.jumpSquat,
     name: 'Jump squat',
     tags: ['legs', 'glutes', 'cardio'],
   },
   {
     description: 'Vertical press with dumbbells or barbell from the shoulders.',
-    id: '4',
+    id: SEED_EXERCISE_IDS.militaryPress,
     name: 'Military press',
     tags: ['shoulders', 'arms'],
   },
   {
     description: 'Hold a rigid body position; deep core strengthening.',
-    id: '5',
+    id: SEED_EXERCISE_IDS.plank,
     name: 'Plank',
     tags: ['abs'],
   },
   {
     description: 'Forward step with rear knee drop; unilateral leg work.',
-    id: '6',
+    id: SEED_EXERCISE_IDS.walkingLunges,
     name: 'Walking lunges',
     tags: ['legs', 'glutes'],
   },
@@ -159,7 +176,7 @@ function createFreeTabataCircuit(accent: string): Circuit {
     ...FREE_TABATA_DEFAULTS,
     color: accent,
     exerciseIds: [],
-    id: `free-${Date.now()}`,
+    id: uuidv4(),
     name: 'Tabata libre',
   };
 }

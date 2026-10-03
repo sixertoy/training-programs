@@ -1,3 +1,4 @@
+import cn from 'classnames';
 import { useEffect, useRef, useState } from 'react';
 
 import { IconGear, IconPause, IconPlay, IconPlus, IconRotateCcw } from '../../assets/icons';
@@ -900,7 +901,10 @@ export function TabataPage({
         </div>
       </div>
 
-      <div className={`px-5 flex items-center justify-center ${isFree ? 'pb-4' : 'pb-10'}`}>
+      <div className={cn('px-5 flex items-center justify-center', {
+        'pb-10': !isFree,
+        'pb-4': isFree,
+      })}>
         <button
           aria-label={isRunning ? 'Pause' : 'Lecture'}
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-95"

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { IconBack, IconPlus } from '../../assets/icons';
 import { AccentColorPicker } from '../accent-color-picker';
@@ -142,7 +143,7 @@ export function CreateCircuitPage({
         cycles,
         exerciseIds,
         exerciseTime,
-        id: initial?.id ?? Date.now().toString(),
+        id: initial?.id ?? uuidv4(),
         name: name.trim(),
         prepTime,
         recoveryTime,

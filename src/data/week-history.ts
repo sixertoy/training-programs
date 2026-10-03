@@ -1,6 +1,7 @@
 import { ActivityCategory, FlowKind, TrainingKind } from '../enums';
 import type { DayProgram } from '../interfaces';
 import { dayWithActivities, DEFAULT_ACTIVITY_COLORS, restDay, trainingDay } from '../utils';
+import { SEED_CIRCUIT_IDS } from './seed-ids';
 
 export interface WeekData {
   isoWeek: number;
@@ -79,7 +80,7 @@ export const WEEK_HISTORY: WeekData[] = [
   {
     days: [
       trainingDay('Lundi', 'LUN', {
-        circuitId: 'c1',
+        circuitId: SEED_CIRCUIT_IDS.forceUpper,
         color: '#FF6B35',
         exercises: 3,
         name: 'Force Upper',
@@ -87,7 +88,7 @@ export const WEEK_HISTORY: WeekData[] = [
       dayWithActivities('Mardi', 'MAR', [
         {
           category: ActivityCategory.TRAINING,
-          circuitId: 'c2',
+          circuitId: SEED_CIRCUIT_IDS.cardioHiit,
           color: '#C62A47',
           exercises: 3,
           id: 'training-mar-c2',
@@ -106,7 +107,7 @@ export const WEEK_HISTORY: WeekData[] = [
       ]),
       restDay('Mercredi', 'MER'),
       trainingDay('Jeudi', 'JEU', {
-        circuitId: 'c1',
+        circuitId: SEED_CIRCUIT_IDS.forceUpper,
         color: '#FF6B35',
         exercises: 3,
         name: 'Force Upper',
@@ -114,7 +115,7 @@ export const WEEK_HISTORY: WeekData[] = [
       dayWithActivities('Vendredi', 'VEN', [
         {
           category: ActivityCategory.TRAINING,
-          circuitId: 'c3',
+          circuitId: SEED_CIRCUIT_IDS.fullBody,
           color: '#1A936F',
           exercises: 6,
           id: 'training-ven-c3',
