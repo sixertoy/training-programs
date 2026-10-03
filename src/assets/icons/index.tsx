@@ -12,6 +12,7 @@ import play from './play.svg?raw';
 import plus from './plus.svg?raw';
 import rotateCcw from './rotate-ccw.svg?raw';
 import skip from './skip.svg?raw';
+import user from './user.svg?raw';
 import week from './week.svg?raw';
 
 function SvgIcon({ svg }: { svg: string }) {
@@ -32,4 +33,5 @@ export const IconPlay = () => <SvgIcon svg={play} />;
 export const IconPlus = () => <SvgIcon svg={plus} />;
 export const IconRotateCcw = () => <SvgIcon svg={rotateCcw} />;
 export const IconSkip = () => <SvgIcon svg={skip} />;
+export const IconUser = () => <SvgIcon svg={user} />;
 export const IconWeek = () => <SvgIcon svg={week} />;

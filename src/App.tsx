@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   IconBack,
+  IconFlash,
   IconGear,
   IconPause,
   IconPlay,
   IconPlus,
   IconRotateCcw,
+  IconUser,
 } from './assets/icons';
 import BottomNav from './BottomNav';
 import freeTabataDefaults from './config/tabata-free.json';
@@ -667,11 +669,13 @@ function Stepper({
 function HomeScreen({
   accent,
   currentWeekDays,
+  onGoToFreeTabata,
   onGoToProfile,
   onGoToTimer,
   onGoToWeekly,
   profile,
 }: {
+  onGoToFreeTabata: () => void;
   onGoToTimer: () => void;
   onGoToWeekly: () => void;
   onGoToProfile: () => void;
@@ -711,7 +715,7 @@ function HomeScreen({
           className="w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
           onClick={onGoToProfile}>
-          <IconGear />
+          <IconUser />
         </button>
       </div>
 
@@ -752,6 +756,15 @@ function HomeScreen({
           </div>
         </div>
       )}
+
+      <button
+        aria-label="Lancer un Tabata libre"
+        className="mx-5 mb-5 rounded-2xl py-3.5 font-900 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+        style={{ backgroundColor: accent, color: '#0d0d0d' }}
+        onClick={onGoToFreeTabata}>
+        <IconFlash />
+        Lancer un Tabata libre
+      </button>
 
       {nextSession && (
         <div className="mx-5 mb-5">
@@ -2505,6 +2518,7 @@ export default function App() {
               accent={accent}
               currentWeekDays={currentWeekDays}
               profile={profile}
+              onGoToFreeTabata={openFreeTabata}
               onGoToProfile={() => {
                 navigate(Screen.PROFILE);
               }}
