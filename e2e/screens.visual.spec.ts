@@ -87,11 +87,18 @@ test.describe('Visual snapshots — main screens', () => {
     await expect(page).toHaveScreenshot('circuits-create.png');
   });
 
-  test('Séance', async ({ page }) => {
+  test('Tabata', async ({ page }) => {
     await openApp(page);
-    await page.getByRole('button', { name: 'Lancer la séance' }).click();
-    await expect(page.getByText('Circuit du jour')).toBeVisible();
-    await expect(page).toHaveScreenshot('seance.png');
+    await page.getByRole('button', { name: 'Lancer le tabata' }).click();
+    await expect(page.getByText('Tabata')).toBeVisible();
+    await expect(page).toHaveScreenshot('tabata.png');
+  });
+
+  test('Tabata libre', async ({ page }) => {
+    await openApp(page);
+    await page.getByRole('button', { name: 'Tabata', exact: true }).click();
+    await expect(page.getByText('Tabata libre')).toBeVisible();
+    await expect(page).toHaveScreenshot('tabata-libre.png');
   });
 
   test('Profil', async ({ page }) => {
