@@ -4,15 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 
 import {
   IconBack,
-  IconCalendar,
-  IconDumbbell,
   IconGear,
-  IconHome,
   IconPause,
   IconPlay,
   IconPlus,
-  IconSkip,
+  IconRotateCcw,
 } from './assets/icons';
+import BottomNav from './BottomNav';
+import freeTabataDefaults from './config/tabata-free.json';
 import ProgrammePage from './ProgrammePage';
 
 enum CardColor {
@@ -49,6 +48,88 @@ function withAlpha(hex: string, opacity: number): string {
     .toString(16)
     .padStart(2, '0');
   return hex + alpha;
+}
+
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n));
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace('#', '').slice(0, 6);
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const to = (n: number) =>
+    Math.round(Math.min(255, Math.max(0, n)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const { r, g, b } = hexToRgb(hex);
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === rn) h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+    else if (max === gn) h = ((bn - rn) / d + 2) / 6;
+    else h = ((rn - gn) / d + 4) / 6;
+  }
+
+  return { h, s, l };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  if (s === 0) {
+    const v = l * 255;
+    return rgbToHex(v, v, v);
+  }
+
+  const hue2rgb = (p: number, q: number, t: number) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return rgbToHex(
+    hue2rgb(p, q, h + 1 / 3) * 255,
+    hue2rgb(p, q, h) * 255,
+    hue2rgb(p, q, h - 1 / 3) * 255,
+  );
+}
+
+function shiftAccentLightness(hex: string, amount = 0.28): string {
+  const { h, s, l } = hexToHsl(hex);
+  const nextL = clamp01(l > 0.5 ? l - amount : l + amount);
+  return hslToHex(h, s, nextL);
+}
+
+/** Même famille que l’accent : décalage de teinte + luminosité (comme la préparation). */
+function shiftAccentHue(hex: string, hueDeg: number, lightnessAmount = 0.28): string {
+  const { h, s, l } = hexToHsl(hex);
+  const nextH = (((h * 360 + hueDeg) % 360) + 360) % 360 / 360;
+  const nextL = clamp01(l > 0.5 ? l - lightnessAmount : l + lightnessAmount);
+  return hslToHex(nextH, s, nextL);
 }
 
 const DAY_SHORTS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
@@ -150,14 +231,13 @@ function computeGlobalStats(
 }
 
 function circuitDurationMin(circuit: CircuitTiming): number {
+  const restAfterExercises = Math.max(0, circuit.rounds - 1) * circuit.restBetweenExercises;
+  const workPerCycle = circuit.rounds * circuit.exerciseTime + restAfterExercises;
+  const interCycleRests = Math.max(0, circuit.cycles - 1) * circuit.restBetweenCycles;
   return Math.max(
     1,
     Math.round(
-      (circuit.prepTime +
-        circuit.cycles *
-          (circuit.rounds * (circuit.exerciseTime + circuit.restBetweenExercises) +
-            circuit.restBetweenCycles) +
-        circuit.recoveryTime) /
+      (circuit.prepTime + circuit.cycles * workPerCycle + interCycleRests + circuit.recoveryTime) /
         60,
     ),
   );
@@ -490,7 +570,20 @@ const WEEK_HISTORY: WeekData[] = [
   },
 ];
 
-type Screen = 'home' | 'weekly' | 'circuits' | 'create-circuit' | 'timer' | 'profile';
+type Screen = 'home' | 'weekly' | 'circuits' | 'create-circuit' | 'tabata' | 'profile';
+type TabataMode = 'free' | 'planned';
+
+const FREE_TABATA_DEFAULTS: CircuitTiming = freeTabataDefaults;
+
+function createFreeTabataCircuit(accent: string): Circuit {
+  return {
+    ...FREE_TABATA_DEFAULTS,
+    color: accent,
+    exerciseIds: [],
+    id: `free-${Date.now()}`,
+    name: 'Tabata libre',
+  };
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -648,7 +741,7 @@ function HomeScreen({
             </button>
             {!todayProgram.isRest && (
               <button
-                aria-label="Lancer la séance"
+                aria-label="Lancer le tabata"
                 className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
                 style={{ backgroundColor: '#0d0d0d' }}
                 onClick={(e) => {
@@ -1123,6 +1216,10 @@ function CreateCircuitScreen({
                 </div>
               ))}
             </div>
+            <p className="text-xs font-600 mt-2.5 leading-relaxed" style={{ color: '#666' }}>
+              Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le
+              repos entre cycles (ou la récupération finale pour le dernier cycle).
+            </p>
             <p className="text-xs font-700 mt-2 text-right" style={{ color: '#555' }}>
               Durée estimée : ~{durationMin} min
             </p>
@@ -1305,9 +1402,9 @@ function CreateCircuitScreen({
   );
 }
 
-// ─── Timer Screen ─────────────────────────────────────────────────────────────
+// ─── Tabata Screen ────────────────────────────────────────────────────────────
 
-type TimerPhase = 'work' | 'rest' | 'interCycleRest';
+type TimerPhase = 'prep' | 'work' | 'rest' | 'interCycleRest' | 'recovery';
 
 type TimerStep = {
   cycle: number;
@@ -1317,55 +1414,68 @@ type TimerStep = {
   done: boolean;
 };
 
+type TimerDurations = {
+  prepTime: number;
+  workTime: number;
+  restTime: number;
+  interCycleRest: number;
+  recoveryTime: number;
+};
+
 function getExerciseIndex(round: number, exerciseCount: number): number {
   return (round - 1) % Math.max(1, exerciseCount);
 }
 
-function phaseDuration(
-  phase: TimerPhase,
-  workTime: number,
-  restTime: number,
-  interCycleRest: number,
-): number {
-  if (phase === 'work') return workTime;
-  if (phase === 'rest') return restTime;
-  return interCycleRest;
+function phaseDuration(phase: TimerPhase, durations: TimerDurations): number {
+  if (phase === 'prep') return durations.prepTime;
+  if (phase === 'work') return durations.workTime;
+  if (phase === 'rest') return durations.restTime;
+  if (phase === 'recovery') return durations.recoveryTime;
+  return durations.interCycleRest;
 }
 
 function advanceTimerStep(
   state: TimerStep,
   totalRounds: number,
   totalCycles: number,
-  workTime: number,
-  restTime: number,
-  interCycleRest: number,
+  durations: TimerDurations,
 ): TimerStep {
   if (state.done) return state;
 
+  const { workTime, restTime, interCycleRest, recoveryTime } = durations;
+
+  if (state.phase === 'prep') {
+    return { ...state, cycle: 1, phase: 'work', round: 1, seconds: workTime };
+  }
+
   if (state.phase === 'work') {
-    const isLastWork = state.cycle >= totalCycles && state.round >= totalRounds;
-    if (isLastWork) {
+    const isLastRound = state.round >= totalRounds;
+    const isLastCycle = state.cycle >= totalCycles;
+
+    // Repos après le dernier round ignoré : absorbé par le repos inter-cycle / la récupération.
+    if (isLastRound) {
+      if (!isLastCycle) {
+        return { ...state, phase: 'interCycleRest', seconds: interCycleRest };
+      }
+      if (recoveryTime > 0) {
+        return { ...state, phase: 'recovery', seconds: recoveryTime };
+      }
       return { ...state, done: true, seconds: 0 };
     }
+
     return { ...state, phase: 'rest', seconds: restTime };
   }
 
   if (state.phase === 'rest') {
-    if (state.round < totalRounds) {
-      return {
-        ...state,
-        round: state.round + 1,
-        phase: 'work',
-        seconds: workTime,
-      };
-    }
-    if (state.cycle < totalCycles) {
-      return {
-        ...state,
-        phase: 'interCycleRest',
-        seconds: interCycleRest,
-      };
-    }
+    return {
+      ...state,
+      round: state.round + 1,
+      phase: 'work',
+      seconds: workTime,
+    };
+  }
+
+  if (state.phase === 'recovery') {
     return { ...state, done: true, seconds: 0 };
   }
 
@@ -1378,31 +1488,53 @@ function advanceTimerStep(
   };
 }
 
-function TimerScreen({
+function TabataScreen({
   accent,
-  circuit,
+  circuit: circuitProp,
   exercises,
+  mode,
   onClose,
 }: {
   onClose: () => void;
-  circuit?: Circuit;
+  circuit: Circuit;
   exercises: Exercise[];
   accent: string;
+  mode: TabataMode;
 }) {
-  const WORK_TIME = circuit?.exerciseTime ?? 45;
-  const REST_TIME = circuit?.restBetweenExercises ?? 15;
-  const INTER_CYCLE_REST = circuit?.restBetweenCycles ?? 60;
-  const TOTAL_ROUNDS = circuit?.rounds ?? 4;
-  const TOTAL_CYCLES = circuit?.cycles ?? 6;
+  const isFree = mode === 'free';
+  const [localCircuit, setLocalCircuit] = useState<Circuit>(circuitProp);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+  const [draft, setDraft] = useState<Circuit>(circuitProp);
 
-  const exerciseNames = circuit
-    ? circuit.exerciseIds.map((id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice')
-    : ['Burpees', 'Tractions', 'Squat sauté', 'Gainage planche', 'Fentes marchées'];
+  const PREP_TIME = localCircuit.prepTime;
+  const WORK_TIME = localCircuit.exerciseTime;
+  const REST_TIME = localCircuit.restBetweenExercises;
+  const INTER_CYCLE_REST = localCircuit.restBetweenCycles;
+  const RECOVERY_TIME = localCircuit.recoveryTime;
+  const TOTAL_ROUNDS = localCircuit.rounds;
+  const TOTAL_CYCLES = localCircuit.cycles;
+  const durations: TimerDurations = {
+    interCycleRest: INTER_CYCLE_REST,
+    prepTime: PREP_TIME,
+    recoveryTime: RECOVERY_TIME,
+    restTime: REST_TIME,
+    workTime: WORK_TIME,
+  };
+  const initialPhase: TimerPhase = PREP_TIME > 0 ? 'prep' : 'work';
+  const initialSeconds = PREP_TIME > 0 ? PREP_TIME : WORK_TIME;
+
+  const exerciseNames =
+    localCircuit.exerciseIds.length > 0
+      ? localCircuit.exerciseIds.map(
+          (id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice',
+        )
+      : ['Exercice'];
 
   const [cycle, setCycle] = useState(1);
   const [round, setRound] = useState(1);
-  const [phase, setPhase] = useState<TimerPhase>('work');
-  const [seconds, setSeconds] = useState(WORK_TIME);
+  const [phase, setPhase] = useState<TimerPhase>(initialPhase);
+  const [seconds, setSeconds] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -1410,34 +1542,29 @@ function TimerScreen({
   const startedAtRef = useRef<number | null>(null);
 
   const exerciseIndex = getExerciseIndex(round, exerciseNames.length);
-  const phaseMax = phaseDuration(phase, WORK_TIME, REST_TIME, INTER_CYCLE_REST);
-  const isWork = phase === 'work';
+  const phaseMax = phaseDuration(phase, durations);
+  const isRestPhase = phase === 'rest' || phase === 'interCycleRest' || phase === 'recovery';
+  const phaseColor =
+    phase === 'work'
+      ? accent
+      : phase === 'prep'
+        ? shiftAccentLightness(accent)
+        : phase === 'recovery'
+          ? shiftAccentHue(accent, -50)
+          : shiftAccentHue(accent, 40);
 
-  const applyStep = (next: TimerStep) => {
-    setCycle(next.cycle);
-    setRound(next.round);
-    setPhase(next.phase);
-    setSeconds(next.seconds);
-    setDone(next.done);
-    if (next.done) {
-      setIsRunning(false);
-      if (startedAtRef.current !== null) {
-        setElapsedSec(Math.max(0, Math.round((Date.now() - startedAtRef.current) / 1000)));
-      }
-    }
-  };
-
-  const goNext = () => {
-    applyStep(
-      advanceTimerStep(
-        { cycle, round, phase, seconds, done },
-        TOTAL_ROUNDS,
-        TOTAL_CYCLES,
-        WORK_TIME,
-        REST_TIME,
-        INTER_CYCLE_REST,
-      ),
-    );
+  const resetTimer = (circuit: Circuit = localCircuit) => {
+    const prep = circuit.prepTime;
+    const work = circuit.exerciseTime;
+    const startPhase: TimerPhase = prep > 0 ? 'prep' : 'work';
+    setCycle(1);
+    setRound(1);
+    setPhase(startPhase);
+    setSeconds(prep > 0 ? prep : work);
+    setIsRunning(false);
+    setDone(false);
+    setElapsedSec(0);
+    startedAtRef.current = null;
   };
 
   useEffect(() => {
@@ -1449,9 +1576,7 @@ function TimerScreen({
               { cycle, round, phase, seconds: s, done },
               TOTAL_ROUNDS,
               TOTAL_CYCLES,
-              WORK_TIME,
-              REST_TIME,
-              INTER_CYCLE_REST,
+              durations,
             );
             setCycle(next.cycle);
             setRound(next.round);
@@ -1478,9 +1603,11 @@ function TimerScreen({
     cycle,
     round,
     done,
+    PREP_TIME,
     WORK_TIME,
     REST_TIME,
     INTER_CYCLE_REST,
+    RECOVERY_TIME,
     TOTAL_ROUNDS,
     TOTAL_CYCLES,
   ]);
@@ -1488,19 +1615,26 @@ function TimerScreen({
   const pad = (n: number) => String(n).padStart(2, '0');
   const formatDuration = (totalSec: number) =>
     `${pad(Math.floor(totalSec / 60))}:${pad(totalSec % 60)}`;
+  const TIMER_R = 108;
+  const TIMER_SIZE = 250;
+  const TIMER_CX = TIMER_SIZE / 2;
   const progress = phaseMax > 0 ? seconds / phaseMax : 0;
-  const circumference = 2 * Math.PI * 88;
+  const circumference = 2 * Math.PI * TIMER_R;
 
   const handleReset = () => {
-    if (done) return;
-    setCycle(1);
-    setRound(1);
-    setPhase('work');
-    setSeconds(WORK_TIME);
-    setIsRunning(false);
-    setDone(false);
-    setElapsedSec(0);
-    startedAtRef.current = null;
+    resetTimer();
+  };
+
+  const handleResetConfig = () => {
+    const resetCircuit: Circuit = {
+      ...localCircuit,
+      ...FREE_TABATA_DEFAULTS,
+      exerciseIds: [],
+    };
+    setDraft(resetCircuit);
+    setLocalCircuit(resetCircuit);
+    setShowPicker(false);
+    resetTimer(resetCircuit);
   };
 
   const handlePlayPause = () => {
@@ -1514,19 +1648,276 @@ function TimerScreen({
   };
 
   const phaseLabel =
-    phase === 'work' ? 'Travail' : phase === 'rest' ? 'Repos' : 'Repos inter-cycle';
+    phase === 'prep'
+      ? 'Préparation'
+      : phase === 'work'
+        ? 'Travail'
+        : phase === 'rest'
+          ? 'Repos'
+          : phase === 'recovery'
+            ? 'Récupération'
+            : 'Repos inter-cycle';
+
+  const openSheet = () => {
+    setDraft(localCircuit);
+    setShowPicker(false);
+    setSheetOpen(true);
+  };
+
+  const applyDraft = () => {
+    setLocalCircuit(draft);
+    setSheetOpen(false);
+    setShowPicker(false);
+    resetTimer(draft);
+  };
+
+  const draftDurationMin = circuitDurationMin(draft);
+  const draftExercises = draft.exerciseIds
+    .map((id) => exercises.find((e) => e.id === id))
+    .filter(Boolean) as Exercise[];
+
+  const nextExerciseName =
+    phase === 'prep'
+      ? exerciseNames[0]
+      : phase === 'work'
+        ? exerciseNames[(exerciseIndex + 1) % exerciseNames.length]
+        : exerciseNames[
+            getExerciseIndex(round < TOTAL_ROUNDS ? round + 1 : 1, exerciseNames.length)
+          ];
+
+  const infoContext =
+    phase === 'prep'
+      ? 'Préparation'
+      : phase === 'recovery'
+        ? 'Fin de séance'
+        : phase === 'interCycleRest'
+          ? 'Entre cycles'
+          : phase === 'rest'
+            ? 'Repos'
+            : 'Exercice actuel';
+
+  const infoMain =
+    phase === 'prep' ? 'Préparez-vous' : isRestPhase ? 'Repos' : exerciseNames[exerciseIndex];
+
+  const showNext =
+    (phase === 'prep' || phase === 'work' || phase === 'rest' || phase === 'interCycleRest') &&
+    exerciseNames.length > 0;
+
+  const timingRows: {
+    key: keyof CircuitTiming;
+    label: string;
+    min?: number;
+    step: number;
+    unit: string;
+  }[] = [
+    { key: 'prepTime', label: 'Préparation', step: 5, unit: 'sec' },
+    { key: 'exerciseTime', label: "Temps d'exercice", step: 5, unit: 'sec' },
+    { key: 'restBetweenExercises', label: 'Repos entre exercices', step: 5, unit: 'sec' },
+    { key: 'rounds', label: 'Rounds / cycle', min: 1, step: 1, unit: '×' },
+    { key: 'cycles', label: 'Nombre de cycles', min: 1, step: 1, unit: '×' },
+    { key: 'restBetweenCycles', label: 'Repos entre cycles', step: 15, unit: 'sec' },
+    { key: 'recoveryTime', label: 'Récupération finale', step: 15, unit: 'sec' },
+  ];
+
+  const sheet = sheetOpen && (
+    <div
+      className="absolute inset-0 flex flex-col justify-end"
+      style={{ backgroundColor: '#00000090', zIndex: 50 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setSheetOpen(false);
+      }}>
+      <div
+        className="rounded-t-3xl px-5 pt-5 pb-6 flex flex-col"
+        style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '78%' }}>
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <p className="font-900 text-lg">Configuration</p>
+          <button
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none"
+            style={{ backgroundColor: '#2a2a2a', color: '#888' }}
+            onClick={() => {
+              setSheetOpen(false);
+            }}>
+            ×
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 space-y-4 pr-0.5">
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            {timingRows.map((row, idx) => (
+              <div
+                key={row.key}
+                className="flex items-center justify-between px-4 py-3"
+                style={{
+                  borderBottom: idx < timingRows.length - 1 ? '1px solid #2a2a2a' : 'none',
+                }}>
+                <p className="text-sm font-700" style={{ color: '#aaa' }}>
+                  {row.label}
+                </p>
+                <Stepper
+                  min={row.min ?? 0}
+                  step={row.step}
+                  unit={row.unit}
+                  value={draft[row.key]}
+                  onChange={(v) => {
+                    setDraft((d) => ({ ...d, [row.key]: v }));
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs font-600 leading-relaxed" style={{ color: '#666' }}>
+            Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le
+            repos entre cycles (ou la récupération finale pour le dernier cycle).
+          </p>
+
+          <p className="text-xs font-700 text-right" style={{ color: '#555' }}>
+            Durée estimée : ~{draftDurationMin} min
+          </p>
+
+          <div>
+            <p
+              className="text-xs font-800 tracking-widest uppercase mb-2.5"
+              style={{ color: accent }}>
+              Exercices ({draft.exerciseIds.length})
+            </p>
+            {draftExercises.length === 0 ? (
+              <p className="text-sm font-600" style={{ color: '#555' }}>
+                Aucun exercice sélectionné
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {draftExercises.map((e, i) => (
+                  <div
+                    key={e.id}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                    style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
+                      style={{ backgroundColor: withAlpha(e.color, 0.15), color: e.color }}>
+                      {i + 1}
+                    </div>
+                    <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
+                    <button
+                      className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
+                      style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
+                      onClick={() => {
+                        setDraft((d) => ({
+                          ...d,
+                          exerciseIds: d.exerciseIds.filter((id) => id !== e.id),
+                        }));
+                      }}>
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              className="w-full rounded-xl py-3 mt-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+              style={{
+                backgroundColor: '#1a1a1a',
+                border: `1px dashed ${withAlpha(accent, 0.3)}`,
+                color: accent,
+              }}
+              onClick={() => {
+                setShowPicker(true);
+              }}>
+              <IconPlus /> Ajouter des exercices
+            </button>
+          </div>
+        </div>
+
+        <div className="shrink-0 mt-4 flex items-center gap-2">
+          <button
+            className="flex-1 rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+            style={{ backgroundColor: accent, color: '#0d0d0d' }}
+            onClick={applyDraft}>
+            Appliquer
+          </button>
+          {isFree && (
+            <button
+              aria-label="Reset"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all active:scale-95"
+              style={{ backgroundColor: '#1a1a1a', color: '#888' }}
+              onClick={handleResetConfig}>
+              <IconRotateCcw />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showPicker && (
+        <div
+          className="absolute inset-0 flex flex-col justify-end"
+          style={{ backgroundColor: '#000000a0', zIndex: 60 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowPicker(false);
+          }}>
+          <div
+            className="rounded-t-3xl px-5 pt-5 pb-6 flex flex-col"
+            style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '72%' }}>
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <p className="font-900 text-lg">Choisir des exercices</p>
+              <button
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none"
+                style={{ backgroundColor: '#2a2a2a', color: '#888' }}
+                onClick={() => {
+                  setShowPicker(false);
+                }}>
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto space-y-2">
+              {exercises.map((e) => {
+                const selected = draft.exerciseIds.includes(e.id);
+                return (
+                  <button
+                    key={e.id}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left"
+                    style={{
+                      backgroundColor: selected ? withAlpha(accent, 0.12) : '#1a1a1a',
+                      border: `1px solid ${selected ? withAlpha(accent, 0.35) : '#2a2a2a'}`,
+                    }}
+                    onClick={() => {
+                      setDraft((d) => ({
+                        ...d,
+                        exerciseIds: selected
+                          ? d.exerciseIds.filter((id) => id !== e.id)
+                          : [...d.exerciseIds, e.id],
+                      }));
+                    }}>
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: e.color }}
+                    />
+                    <span className="font-800 text-sm flex-1">{e.name}</span>
+                    <span className="text-xs font-900" style={{ color: selected ? accent : '#444' }}>
+                      {selected ? '✓' : '+'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   if (done) {
     return (
       <div
-        className="flex flex-col h-full"
+        className="flex flex-col h-full relative"
         style={{ background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)' }}>
         <div className="px-5 pt-8 pb-4 text-center">
           <p className="font-900 text-sm" style={{ color: accent }}>
-            {circuit?.name ?? 'Séance'}
+            {localCircuit.name}
           </p>
           <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-            Séance terminée
+            Tabata terminé
           </p>
         </div>
 
@@ -1582,12 +1973,21 @@ function TimerScreen({
             ))}
           </div>
 
-          <button
-            className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
-            style={{ backgroundColor: accent, color: '#0d0d0d' }}
-            onClick={onClose}>
-            Fermer
-          </button>
+          {isFree ? (
+            <button
+              className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+              style={{ backgroundColor: accent, color: '#0d0d0d' }}
+              onClick={handleReset}>
+              Recommencer
+            </button>
+          ) : (
+            <button
+              className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+              style={{ backgroundColor: accent, color: '#0d0d0d' }}
+              onClick={onClose}>
+              Fermer
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1595,33 +1995,42 @@ function TimerScreen({
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full relative"
       style={{ background: 'linear-gradient(180deg, #0d0d0d 0%, #111 100%)' }}>
-      <div className="px-5 pt-8 pb-4 flex items-center justify-between">
-        <button
-          aria-label="Fermer"
-          className="w-10 h-10 rounded-full flex items-center justify-center text-xl leading-none font-900"
-          style={{ backgroundColor: '#1a1a1a', color: '#888' }}
-          onClick={onClose}>
-          ×
-        </button>
-        <div className="text-center">
-          <p className="font-900 text-sm" style={{ color: accent }}>
-            {circuit?.name ?? 'Séance'}
+      <div className="px-5 pt-8 pb-4 flex items-center justify-between gap-2">
+        {isFree ? (
+          <div className="w-10 shrink-0" />
+        ) : (
+          <button
+            aria-label="Fermer"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-xl leading-none font-900 shrink-0"
+            style={{ backgroundColor: '#1a1a1a', color: '#888' }}
+            onClick={onClose}>
+            ×
+          </button>
+        )}
+        <div className="text-center flex-1 min-w-0">
+          <p className="font-900 text-sm truncate" style={{ color: accent }}>
+            {localCircuit.name}
           </p>
           <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-            Circuit du jour
+            Tabata
           </p>
         </div>
-        <button
-          className="text-xs font-800 px-3 py-2 rounded-full"
-          style={{ backgroundColor: '#1a1a1a', color: '#888' }}
-          onClick={handleReset}>
-          Reset
-        </button>
+        {isFree ? (
+          <button
+            aria-label="Configuration"
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: '#1a1a1a', color: '#888' }}
+            onClick={openSheet}>
+            <IconGear />
+          </button>
+        ) : (
+          <div className="w-10 shrink-0" />
+        )}
       </div>
 
-      <div className="px-5 flex gap-3 mb-6">
+      <div className="px-5 flex gap-3 mb-4">
         {[
           { color: accent, label: 'Rounds', total: TOTAL_ROUNDS, value: round },
           { color: '#fff', label: 'Cycles', total: TOTAL_CYCLES, value: cycle },
@@ -1656,27 +2065,23 @@ function TimerScreen({
         ))}
       </div>
 
-      <div className="text-center mb-2">
-        <span
-          className="text-xs font-900 tracking-widest uppercase px-4 py-1.5 rounded-full"
-          style={{
-            backgroundColor: isWork ? withAlpha(accent, 0.12) : '#FF6B3520',
-            color: isWork ? accent : '#FF6B35',
-          }}>
-          {phaseLabel}
-        </span>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 flex flex-col items-center justify-center px-5">
         <div className="relative">
-          <svg height="210" style={{ transform: 'rotate(-90deg)' }} width="210">
-            <circle cx="105" cy="105" fill="none" r="88" stroke="#2a2a2a" strokeWidth="8" />
+          <svg height={TIMER_SIZE} style={{ transform: 'rotate(-90deg)' }} width={TIMER_SIZE}>
             <circle
-              cx="105"
-              cy="105"
+              cx={TIMER_CX}
+              cy={TIMER_CX}
               fill="none"
-              r="88"
-              stroke={isWork ? accent : '#FF6B35'}
+              r={TIMER_R}
+              stroke="#2a2a2a"
+              strokeWidth="8"
+            />
+            <circle
+              cx={TIMER_CX}
+              cy={TIMER_CX}
+              fill="none"
+              r={TIMER_R}
+              stroke={phaseColor}
               strokeDasharray={`${circumference * progress} ${circumference}`}
               strokeLinecap="round"
               strokeWidth="8"
@@ -1684,40 +2089,42 @@ function TimerScreen({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-900 leading-none" style={{ color: '#fff', fontSize: 54 }}>
+            <span className="font-900 leading-none" style={{ color: '#fff', fontSize: 64 }}>
               {`${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`}
             </span>
-            <span className="text-sm font-700 mt-1" style={{ color: '#555' }}>
-              {isWork ? 'secondes' : 'récupération'}
+            <span
+              className="text-xs font-900 tracking-widest uppercase px-4 py-1.5 rounded-full mt-3"
+              style={{
+                backgroundColor: withAlpha(phaseColor, 0.12),
+                color: phaseColor,
+              }}>
+              {phaseLabel}
             </span>
           </div>
         </div>
 
-        <div className="mt-6 text-center px-8">
-          <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: '#555' }}>
-            {phase === 'interCycleRest' ? 'Entre cycles' : 'Exercice actuel'}
+        <div className="mt-8 w-full text-center px-5 py-5">
+          <p className="text-xs font-800 tracking-widest uppercase mb-2" style={{ color: '#666' }}>
+            {infoContext}
           </p>
-          <p className="text-xl font-900">
-            {phase === 'interCycleRest' ? 'Repos' : exerciseNames[exerciseIndex]}
-          </p>
-          {phase !== 'interCycleRest' && exerciseNames.length > 1 && (
-            <p className="text-sm font-600 mt-1" style={{ color: '#555' }}>
-              Suivant :{' '}
-              {phase === 'work'
-                ? exerciseNames[(exerciseIndex + 1) % exerciseNames.length]
-                : exerciseNames[
-                    getExerciseIndex(round < TOTAL_ROUNDS ? round + 1 : 1, exerciseNames.length)
-                  ]}
+          <p className="text-2xl font-900 leading-tight">{infoMain}</p>
+          {showNext && (
+            <p className="text-base font-700 mt-3" style={{ color: '#888' }}>
+              {phase === 'prep' ? 'Premier' : 'Suivant'} : {nextExerciseName}
             </p>
           )}
         </div>
       </div>
 
-      <div className="px-5 pb-10 flex items-center justify-center gap-6">
+      <div className={`px-5 flex items-center justify-center ${isFree ? 'pb-4' : 'pb-10'}`}>
         <button
           aria-label={isRunning ? 'Pause' : 'Lecture'}
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-95"
-          style={{ backgroundColor: accent, color: '#0d0d0d' }}
+          style={{
+            backgroundColor: phaseColor,
+            color: '#0d0d0d',
+            transition: 'background-color 0.3s ease, transform 0.15s ease',
+          }}
           onClick={handlePlayPause}>
           {isRunning ? (
             <IconPause />
@@ -1727,17 +2134,13 @@ function TimerScreen({
             </span>
           )}
         </button>
-        <button
-          aria-label="Exercice suivant"
-          className="w-14 h-14 rounded-full flex items-center justify-center transition-transform active:scale-95"
-          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
-          onClick={goNext}>
-          <IconSkip />
-        </button>
       </div>
+
+      {sheet}
     </div>
   );
 }
+
 
 // ─── Profile Screen ───────────────────────────────────────────────────────────
 
@@ -2010,46 +2413,6 @@ function ProfileScreen({
   );
 }
 
-// ─── Bottom Nav ───────────────────────────────────────────────────────────────
-
-function BottomNav({
-  accent,
-  onNavigate,
-  screen,
-}: {
-  screen: Screen;
-  onNavigate: (s: Screen) => void;
-  accent: string;
-}) {
-  const items: { id: Screen; label: string; icon: React.ReactNode }[] = [
-    { icon: <IconHome />, id: 'home', label: 'Accueil' },
-    { icon: <IconCalendar />, id: 'weekly', label: 'Programme' },
-    { icon: <IconDumbbell />, id: 'circuits', label: 'Circuits' },
-  ];
-  return (
-    <div
-      className="flex items-center justify-around px-2 py-3 shrink-0"
-      style={{ backgroundColor: '#111', borderTop: '1px solid #1f1f1f' }}>
-      {items.map((item) => {
-        const active = screen === item.id;
-        return (
-          <button
-            key={item.id}
-            className="flex flex-col items-center gap-1 flex-1 py-1 transition-all"
-            onClick={() => {
-              onNavigate(item.id);
-            }}>
-            <span style={{ color: active ? accent : '#444' }}>{item.icon}</span>
-            <span className="text-xs font-800" style={{ color: active ? accent : '#444' }}>
-              {item.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -2064,6 +2427,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [editingCircuitId, setEditingCircuitId] = useState<string | null>(null);
   const [sessionCircuit, setSessionCircuit] = useState<Circuit | undefined>();
+  const [tabataMode, setTabataMode] = useState<TabataMode>('free');
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', profile.accentColor);
@@ -2077,10 +2441,17 @@ export default function App() {
     setScreen(prevScreen === screen ? 'home' : prevScreen);
   };
 
+  const openFreeTabata = () => {
+    setTabataMode('free');
+    setSessionCircuit(createFreeTabataCircuit(profile.accentColor));
+    navigate('tabata');
+  };
+
   const startSession = (circuit?: Circuit) => {
     if (!circuit) return;
+    setTabataMode('planned');
     setSessionCircuit(circuit);
-    navigate('timer');
+    navigate('tabata');
   };
 
   const goToCreateCircuit = (id?: string) => {
@@ -2117,7 +2488,10 @@ export default function App() {
     ? circuits.find((c) => c.id === editingCircuitId)
     : undefined;
   const accent = profile.accentColor;
-  const noNav = screen === 'create-circuit' || screen === 'profile' || screen === 'timer';
+  const noNav =
+    screen === 'create-circuit' ||
+    screen === 'profile' ||
+    (screen === 'tabata' && tabataMode === 'planned');
 
   return (
     <div
@@ -2184,11 +2558,13 @@ export default function App() {
               onSave={handleSaveCircuit}
             />
           )}
-          {screen === 'timer' && (
-            <TimerScreen
+          {screen === 'tabata' && sessionCircuit && (
+            <TabataScreen
+              key={sessionCircuit.id}
               accent={accent}
-              circuit={sessionCircuit ?? todayCircuit}
+              circuit={sessionCircuit}
               exercises={exercises}
+              mode={tabataMode}
               onClose={handleBack}
             />
           )}
@@ -2196,7 +2572,19 @@ export default function App() {
             <ProfileScreen profile={profile} onBack={handleBack} onSave={setProfile} />
           )}
         </div>
-        {!noNav && <BottomNav accent={accent} screen={screen} onNavigate={navigate} />}
+        {!noNav && (
+          <BottomNav
+            accent={accent}
+            screen={screen}
+            onNavigate={(s) => {
+              if (s === 'tabata') {
+                openFreeTabata();
+                return;
+              }
+              navigate(s);
+            }}
+          />
+        )}
       </div>
     </div>
   );
