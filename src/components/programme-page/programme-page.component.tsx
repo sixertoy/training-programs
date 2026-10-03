@@ -49,6 +49,7 @@ import {
   FLOW_KIND_LABELS,
   isSameDayProgram,
 } from '../../utils';
+import { Stepper } from '../stepper';
 
 interface Circuit {
   id: string;
@@ -283,11 +284,11 @@ function DayActivitiesSheet({
   const [addStep, setAddStep] = useState<AddStep>('idle');
   const [pendingAssign, setPendingAssign] = useState<DayProgram | null>(null);
   const [runningName, setRunningName] = useState('Course');
-  const [runningDistance, setRunningDistance] = useState('5');
-  const [runningDuration, setRunningDuration] = useState('30');
+  const [runningDistance, setRunningDistance] = useState(5);
+  const [runningDuration, setRunningDuration] = useState(30);
   const [runningInterval, setRunningInterval] = useState(false);
   const [flowName, setFlowName] = useState('Session flow');
-  const [flowDuration, setFlowDuration] = useState('20');
+  const [flowDuration, setFlowDuration] = useState(20);
   const [flowKind, setFlowKind] = useState<FlowKind>(FlowKind.YOGA);
 
   const persist = (next: DayProgram, closeAfter = false) => {
@@ -554,35 +555,29 @@ function DayActivitiesSheet({
                   setRunningName(e.target.value);
                 }}
               />
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
-                  placeholder="Distance (km)"
-                  style={{
-                    backgroundColor: '#1a1a1a',
-                    border: '1px solid #2a2a2a',
-                    color: '#f5f5f5',
-                  }}
-                  type="number"
-                  value={runningDistance}
-                  onChange={(e) => {
-                    setRunningDistance(e.target.value);
-                  }}
-                />
-                <input
-                  className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
-                  placeholder="Durée (min)"
-                  style={{
-                    backgroundColor: '#1a1a1a',
-                    border: '1px solid #2a2a2a',
-                    color: '#f5f5f5',
-                  }}
-                  type="number"
-                  value={runningDuration}
-                  onChange={(e) => {
-                    setRunningDuration(e.target.value);
-                  }}
-                />
+              <div
+                className="rounded-2xl px-4 py-3 space-y-3"
+                style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-800">Distance</span>
+                  <Stepper
+                    min={0}
+                    step={0.5}
+                    unit="km"
+                    value={runningDistance}
+                    onChange={setRunningDistance}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-800">Durée</span>
+                  <Stepper
+                    min={0}
+                    step={5}
+                    unit="min"
+                    value={runningDuration}
+                    onChange={setRunningDuration}
+                  />
+                </div>
               </div>
               <button
                 className="w-full rounded-2xl px-4 py-3.5 font-800 flex items-center justify-between transition-all active:scale-95"
@@ -613,8 +608,8 @@ function DayActivitiesSheet({
               onClick={() => {
                 addActivity(
                   createRunningActivity({
-                    distanceKm: Number(runningDistance) || undefined,
-                    durationMin: Number(runningDuration) || undefined,
+                    distanceKm: runningDistance > 0 ? runningDistance : undefined,
+                    durationMin: runningDuration > 0 ? runningDuration : undefined,
                     isInterval: runningInterval,
                     name: runningName.trim() || 'Course',
                   }),
@@ -651,20 +646,18 @@ function DayActivitiesSheet({
                   setFlowName(e.target.value);
                 }}
               />
-              <input
-                className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
-                placeholder="Durée (min)"
-                style={{
-                  backgroundColor: '#1a1a1a',
-                  border: '1px solid #2a2a2a',
-                  color: '#f5f5f5',
-                }}
-                type="number"
-                value={flowDuration}
-                onChange={(e) => {
-                  setFlowDuration(e.target.value);
-                }}
-              />
+              <div
+                className="rounded-2xl px-4 py-3 flex items-center justify-between"
+                style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                <span className="text-sm font-800">Durée</span>
+                <Stepper
+                  min={0}
+                  step={5}
+                  unit="min"
+                  value={flowDuration}
+                  onChange={setFlowDuration}
+                />
+              </div>
               <div className="flex gap-2">
                 {([FlowKind.YOGA, FlowKind.STRETCHING, FlowKind.STRENGTHENING] as const).map(
                   (kind) => (
@@ -691,7 +684,7 @@ function DayActivitiesSheet({
               onClick={() => {
                 addActivity(
                   createFlowActivity({
-                    durationMin: Number(flowDuration) || undefined,
+                    durationMin: flowDuration > 0 ? flowDuration : undefined,
                     flowKind,
                     name: flowName.trim() || FLOW_KIND_LABELS[flowKind],
                   }),

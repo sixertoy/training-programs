@@ -9,7 +9,73 @@ export interface WeekData {
   stats: { sessions: number; totalMin: number; volume: string };
 }
 
+function simpleActiveWeek(
+  isoWeek: number,
+  year: number,
+  totalMin: number,
+  pattern: ('train' | 'run' | 'flow' | 'rest')[],
+): WeekData {
+  const labels = [
+    ['Lundi', 'LUN'],
+    ['Mardi', 'MAR'],
+    ['Mercredi', 'MER'],
+    ['Jeudi', 'JEU'],
+    ['Vendredi', 'VEN'],
+    ['Samedi', 'SAM'],
+    ['Dimanche', 'DIM'],
+  ] as const;
+
+  const days = pattern.map((kind, index) => {
+    const [day, short] = labels[index];
+    if (kind === 'rest') return restDay(day, short);
+    if (kind === 'run') {
+      return dayWithActivities(day, short, [
+        {
+          category: ActivityCategory.RUNNING,
+          color: DEFAULT_ACTIVITY_COLORS[ActivityCategory.RUNNING],
+          distanceKm: 6,
+          durationMin: 35,
+          id: `run-${year}-W${isoWeek}-${short}`,
+          isInterval: index % 2 === 0,
+          name: 'Course',
+        },
+      ]);
+    }
+    if (kind === 'flow') {
+      return dayWithActivities(day, short, [
+        {
+          category: ActivityCategory.FLOW,
+          color: DEFAULT_ACTIVITY_COLORS[ActivityCategory.FLOW],
+          durationMin: 25,
+          flowKind: FlowKind.YOGA,
+          id: `flow-${year}-W${isoWeek}-${short}`,
+          name: 'Yoga',
+        },
+      ]);
+    }
+    return trainingDay(day, short, {
+      color: DEFAULT_ACTIVITY_COLORS[ActivityCategory.TRAINING],
+      exercises: 4,
+      name: 'Full Body',
+    });
+  });
+
+  return {
+    days,
+    isoWeek,
+    stats: {
+      sessions: pattern.filter((p) => p !== 'rest').length,
+      totalMin,
+      volume: '—',
+    },
+    year,
+  };
+}
+
 export const WEEK_HISTORY: WeekData[] = [
+  simpleActiveWeek(40, 2026, 180, ['train', 'run', 'rest', 'train', 'flow', 'run', 'rest']),
+  simpleActiveWeek(39, 2026, 165, ['train', 'rest', 'train', 'run', 'rest', 'flow', 'rest']),
+  simpleActiveWeek(38, 2026, 150, ['run', 'train', 'rest', 'train', 'rest', 'flow', 'rest']),
   {
     days: [
       trainingDay('Lundi', 'LUN', {
@@ -216,4 +282,9 @@ export const WEEK_HISTORY: WeekData[] = [
     stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
     year: 2026,
   },
+  simpleActiveWeek(28, 2026, 140, ['train', 'rest', 'run', 'rest', 'train', 'flow', 'rest']),
+  simpleActiveWeek(24, 2026, 155, ['run', 'train', 'rest', 'train', 'rest', 'run', 'flow']),
+  simpleActiveWeek(20, 2026, 130, ['train', 'rest', 'train', 'rest', 'flow', 'run', 'rest']),
+  simpleActiveWeek(16, 2026, 120, ['run', 'rest', 'train', 'rest', 'train', 'rest', 'flow']),
+  simpleActiveWeek(12, 2026, 110, ['train', 'run', 'rest', 'flow', 'rest', 'train', 'rest']),
 ];

@@ -18,3 +18,18 @@ export {
   restDay,
   trainingDay,
 } from './activity.util';
+export {
+  MET_BY_CATEGORY,
+  computeCaloriesBurned,
+  computeCategoryRatioLast30Days,
+  computeCategoryTotals,
+  computeMonthlyVolume,
+  computePersonalBestMonth,
+  computeRecoveryIndex,
+  computeStreakAlert,
+  computeStreakDays,
+  computeStreakWeeks,
+  flattenDatedDays,
+  isValidStreakDay,
+} from './stats.util';
+export type { DatedDay, StreakAlert, StreakAlertLevel } from './stats.util';

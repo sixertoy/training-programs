@@ -1,6 +1,17 @@
 import { addWeeks, format, getDay, getISOWeek, getISOWeekYear, startOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useEffect, useRef, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 import {
   IconBack,
@@ -15,16 +26,29 @@ import {
 import { AccentColorPicker } from './components/accent-color-picker';
 import { BottomNav } from './components/bottom-nav';
 import { ProgrammePage } from './components/programme-page';
+import { Stepper } from './components/stepper';
 import freeTabataDefaults from './config/tabata-free.json';
 import { WEEK_HISTORY } from './data/week-history';
 import { ActivityCategory, Gender, Screen, TabataMode, TimerPhase, ViewMode } from './enums';
 import type { DayProgram } from './interfaces';
 import {
+  ACTIVITY_CATEGORY_LABELS,
+  DEFAULT_ACTIVITY_COLORS,
   circuitMuscleKey,
+  computeCaloriesBurned,
+  computeCategoryRatioLast30Days,
+  computeCategoryTotals,
+  computeMonthlyVolume,
+  computePersonalBestMonth,
+  computeRecoveryIndex,
+  computeStreakAlert,
+  computeStreakDays,
+  computeStreakWeeks,
   dayExerciseCount,
   dayPrimaryLabel,
   daySummaryLabel,
   firstTrainingCircuitId,
+  flattenDatedDays,
 } from './utils';
 
 enum AccentColor {
@@ -165,9 +189,24 @@ function getBmiColor(bmi: number, accentColor: string): string {
   return '#FF6B6B';
 }
 
+function getBodyFatCategory(bodyFatPct: number, gender: Gender): string {
+  if (gender === Gender.MALE) {
+    if (bodyFatPct < 10) return 'Athlétique';
+    if (bodyFatPct < 20) return 'Forme';
+    if (bodyFatPct < 25) return 'Moyen';
+    return 'Élevé';
+  }
+  if (bodyFatPct < 18) return 'Athlétique';
+  if (bodyFatPct < 28) return 'Forme';
+  if (bodyFatPct < 32) return 'Moyen';
+  return 'Élevé';
+}
+
 function computeHealthStats(profile: HealthStatsInput & { accentColor: string }): HealthStats {
   const heightM = profile.heightCm / 100;
   const bmi = profile.weightKg / (heightM * heightM);
+  const sex = profile.gender === Gender.MALE ? 1 : 0;
+  const bodyFatPct = Math.round((1.2 * bmi + 0.23 * profile.age - 10.8 * sex - 5.4) * 10) / 10;
   const bmr =
     profile.gender === Gender.MALE
       ? Math.round(
@@ -187,6 +226,8 @@ function computeHealthStats(profile: HealthStatsInput & { accentColor: string })
     bmiCategory: getBmiCategory(bmi),
     bmiColor: getBmiColor(bmi, profile.accentColor),
     bmr,
+    bodyFatCategory: getBodyFatCategory(bodyFatPct, profile.gender),
+    bodyFatPct,
     fcMax: 220 - profile.age,
     idealWeight,
   };
@@ -256,6 +297,7 @@ interface UserProfile {
   gender: Gender;
   accentColor: string;
   defaultProgrammeView: ViewMode;
+  streakGraceDays: number;
 }
 
 interface NextSession {
@@ -268,6 +310,8 @@ interface HealthStats {
   bmi: number;
   bmiCategory: string;
   bmiColor: string;
+  bodyFatPct: number;
+  bodyFatCategory: string;
   fcMax: number;
   bmr: number;
   idealWeight: number;
@@ -323,6 +367,7 @@ const defaultProfile: UserProfile = {
   gender: Gender.MALE,
   heightCm: 178,
   lastName: '',
+  streakGraceDays: 2,
   weightKg: 75,
 };
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -485,59 +530,18 @@ function exerciseColor(exercise: Exercise): string {
   return TAG_COLORS[exercise.tags[0]] ?? '#888';
 }
 
-// ─── Shared Components ────────────────────────────────────────────────────────
-
-function Stepper({
-  min = 0,
-  onChange,
-  step = 5,
-  unit,
-  value,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-  unit: string;
-  step?: number;
-  min?: number;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
-        style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
-        onClick={() => {
-          onChange(Math.max(min, value - step));
-        }}>
-        −
-      </button>
-      <span className="font-900 text-base text-center" style={{ minWidth: 52 }}>
-        {value}
-        <span className="text-xs font-700 ml-1" style={{ color: '#555' }}>
-          {unit}
-        </span>
-      </span>
-      <button
-        className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
-        style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
-        onClick={() => {
-          onChange(value + step);
-        }}>
-        +
-      </button>
-    </div>
-  );
-}
-
 // ─── Home Screen ──────────────────────────────────────────────────────────────
 
 function HomeScreen({
   accent,
+  circuits,
   currentWeekDays,
   onGoToFreeTabata,
   onGoToProfile,
   onGoToTimer,
   onGoToWeekly,
   profile,
+  weekPrograms,
 }: {
   onGoToFreeTabata: () => void;
   onGoToTimer: () => void;
@@ -545,22 +549,53 @@ function HomeScreen({
   onGoToProfile: () => void;
   profile: UserProfile;
   currentWeekDays: DayProgram[];
+  weekPrograms: Record<string, DayProgram[]>;
+  circuits: Circuit[];
   accent: string;
 }) {
   const { bodyPartCount, maxCount, totalExerciseReps, totalMin, totalSessions } =
     computeGlobalStats(WEEK_HISTORY, BODY_PARTS, CIRCUIT_MUSCLES);
   const todayIndex = getTodayIndex();
   const nextSession = getNextSession(currentWeekDays, todayIndex);
-  const sparkData = WEEK_HISTORY.slice()
-    .reverse()
-    .map((w) => w.stats.totalMin);
-  const sparkMax = Math.max(...sparkData);
   const sortedParts = [...BODY_PARTS].sort((a, b) => bodyPartCount[b] - bodyPartCount[a]);
   const totalHours = Math.floor(totalMin / 60);
   const totalMinsRem = totalMin % 60;
   const todayLabel = format(new Date(), 'EEEE · dd MMM yyyy', { locale: fr });
   const todayHeading = todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1);
   const todayProgram = currentWeekDays[todayIndex];
+  const today = new Date();
+  const datedDays = flattenDatedDays(WEEK_HISTORY, weekPrograms);
+  const { streak: dayStreak } = computeStreakDays(datedDays, today, profile.streakGraceDays);
+  const weekStreak = computeStreakWeeks(datedDays, today, profile.streakGraceDays);
+  const streakAlert = computeStreakAlert(
+    datedDays,
+    today,
+    profile.streakGraceDays,
+    dayStreak,
+  );
+  const personalBest = computePersonalBestMonth(datedDays, circuits);
+  const personalBestHours = Math.floor(personalBest.totalMin / 60);
+  const calories = computeCaloriesBurned(datedDays, profile.weightKg, circuits);
+  const monthlyVolume = computeMonthlyVolume(datedDays, circuits, 6, today);
+  const categoryTotals = computeCategoryTotals(datedDays);
+  const categoryRatio = computeCategoryRatioLast30Days(datedDays, today);
+  const recovery = computeRecoveryIndex(datedDays, today);
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const monthMax = Math.max(...monthlyVolume.map((m) => m.totalMin), 1);
+  const pieTotal = categoryRatio.reduce((sum, item) => sum + item.value, 0);
+
+  let alertStyle = {
+    backgroundColor: withAlpha(accent, 0.12),
+    border: `1px solid ${withAlpha(accent, 0.3)}`,
+  };
+  if (streakAlert.level === 'lost') {
+    alertStyle = { backgroundColor: '#3a1515', border: '1px solid #FF6B6B55' };
+  } else if (streakAlert.level === 'danger') {
+    alertStyle = {
+      backgroundColor: withAlpha('#FF6B35', 0.15),
+      border: '1px solid #FF6B3555',
+    };
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -626,6 +661,85 @@ function HomeScreen({
         Lancer un Tabata libre
       </button>
 
+      {!alertDismissed && streakAlert.level !== 'safe' && (
+        <div
+          className="mx-5 mb-4 rounded-2xl px-4 py-3.5 flex items-start gap-3"
+          style={alertStyle}>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: accent }}>
+              Série
+            </p>
+            <p className="text-sm font-700" style={{ color: '#eee' }}>
+              {streakAlert.message}
+            </p>
+          </div>
+          <button
+            aria-label="Fermer l'alerte"
+            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: '#2a2a2a', color: '#888' }}
+            type="button"
+            onClick={() => {
+              setAlertDismissed(true);
+            }}>
+            ×
+          </button>
+        </div>
+      )}
+
+      <div className="mx-5 mb-5 grid grid-cols-2 gap-2.5">
+        <div
+          className="rounded-2xl p-4"
+          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+          <p className="text-xs font-800 tracking-widest uppercase mb-2" style={{ color: '#555' }}>
+            Série
+          </p>
+          <p className="text-3xl font-900" style={{ color: accent }}>
+            {dayStreak}
+          </p>
+          <p className="text-xs font-700 mt-1" style={{ color: '#888' }}>
+            jours · {weekStreak} sem.
+          </p>
+        </div>
+        <div
+          className="rounded-2xl p-4"
+          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+          <p className="text-xs font-800 tracking-widest uppercase mb-2" style={{ color: '#555' }}>
+            Record
+          </p>
+          <p className="text-2xl font-900" style={{ color: accent }}>
+            {personalBestHours > 0 ? `${personalBestHours}h` : `${personalBest.totalMin}m`}
+          </p>
+          <p className="text-xs font-700 mt-1" style={{ color: '#888' }}>
+            {personalBest.totalMin > 0
+              ? `Ton record : ${personalBestHours}h en ${personalBest.label}`
+              : 'Pas encore de record'}
+          </p>
+        </div>
+      </div>
+
+      {recovery.needsRecovery && (
+        <div
+          className="mx-5 mb-5 rounded-2xl px-4 py-3.5"
+          style={{
+            backgroundColor: withAlpha('#74C0FC', 0.1),
+            border: '1px solid #74C0FC44',
+          }}>
+          <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: '#74C0FC' }}>
+            Récupération
+          </p>
+          <p className="text-sm font-700" style={{ color: '#ddd' }}>
+            {recovery.hardDays} jours intenses sans Flow — planifie une séance de mobilité.
+          </p>
+          <button
+            className="mt-2 text-xs font-800"
+            style={{ color: accent }}
+            type="button"
+            onClick={onGoToWeekly}>
+            Ouvrir le programme →
+          </button>
+        </div>
+      )}
+
       {nextSession && (
         <div className="mx-5 mb-5">
           <p
@@ -687,41 +801,117 @@ function HomeScreen({
       <div
         className="mx-5 mb-5 rounded-2xl p-4"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-800 tracking-widest uppercase" style={{ color: '#555' }}>
-            Volume / semaine
-          </p>
-          <p className="text-xs font-700" style={{ color: accent }}>
-            5 sem.
-          </p>
+        <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: '#555' }}>
+          Calories estimées
+        </p>
+        <p className="text-3xl font-900" style={{ color: accent }}>
+          {calories}
+          <span className="text-sm font-700 ml-1" style={{ color: '#888' }}>
+            kcal
+          </span>
+        </p>
+        <p className="text-xs font-600 mt-1" style={{ color: '#555' }}>
+          Méthode MET · estimation
+        </p>
+      </div>
+
+      <div
+        className="mx-5 mb-5 rounded-2xl p-4"
+        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+        <p className="text-xs font-800 tracking-widest uppercase mb-3" style={{ color: '#555' }}>
+          Charge mensuelle
+        </p>
+        <div style={{ height: 160, width: '100%' }}>
+          <ResponsiveContainer>
+            <BarChart data={monthlyVolume}>
+              <XAxis dataKey="label" stroke="#555" tick={{ fill: '#888', fontSize: 11 }} />
+              <YAxis hide domain={[0, monthMax]} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#161616',
+                  border: '1px solid #2a2a2a',
+                  borderRadius: 12,
+                }}
+                formatter={(value) => [`${String(value)} min`, 'Volume']}
+              />
+              <Bar dataKey="totalMin" fill={accent} radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <div className="flex items-end gap-1.5 h-14">
-          {sparkData.map((val, i) => {
-            const key = `sparkData-${i}`;
-            return (
-              <div key={key} className="flex-1">
-                <div
-                  className="w-full rounded-t-md"
-                  style={{
-                    backgroundColor: i === sparkData.length - 1 ? accent : withAlpha(accent, 0.2),
-                    height: `${Math.round((val / sparkMax) * 100)}%`,
-                    minHeight: 4,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <div className="flex gap-1.5 mt-2">
-          {['S33', 'S34', 'S35', 'S36', 'S37'].map((s, i) => (
-            <p
-              key={s}
-              className="flex-1 text-center text-xs font-700"
-              style={{ color: i === 4 ? accent : '#333' }}>
-              {s}
-            </p>
+      </div>
+
+      <div className="mx-5 mb-5">
+        <p className="text-xs font-800 tracking-widest uppercase mb-2.5" style={{ color: '#555' }}>
+          Séances par catégorie
+        </p>
+        <div className="grid grid-cols-3 gap-2.5">
+          {(
+            [ActivityCategory.TRAINING, ActivityCategory.RUNNING, ActivityCategory.FLOW] as const
+          ).map((category) => (
+            <div
+              key={category}
+              className="rounded-2xl p-3 text-center"
+              style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+              <p className="text-xl font-900" style={{ color: DEFAULT_ACTIVITY_COLORS[category] }}>
+                {categoryTotals[category]}
+              </p>
+              <p className="text-xs font-700 mt-1" style={{ color: '#555' }}>
+                {ACTIVITY_CATEGORY_LABELS[category]}
+              </p>
+            </div>
           ))}
         </div>
+      </div>
+
+      <div
+        className="mx-5 mb-5 rounded-2xl p-4"
+        style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+        <p className="text-xs font-800 tracking-widest uppercase mb-3" style={{ color: '#555' }}>
+          Équilibre 30 jours
+        </p>
+        {pieTotal === 0 ? (
+          <p className="text-sm font-700" style={{ color: '#555' }}>
+            Pas encore d&apos;activités sur 30 jours
+          </p>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div style={{ height: 140, width: 140 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    cx="50%"
+                    cy="50%"
+                    data={categoryRatio}
+                    dataKey="value"
+                    innerRadius={36}
+                    nameKey="label"
+                    outerRadius={60}
+                    stroke="none">
+                    {categoryRatio.map((entry) => (
+                      <Cell key={entry.category} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {categoryRatio.map((entry) => (
+                <div key={entry.category} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="text-xs font-800 truncate">{entry.label}</span>
+                  </div>
+                  <span className="text-xs font-900" style={{ color: '#888' }}>
+                    {Math.round((entry.value / pieTotal) * 100)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div
@@ -2222,6 +2412,24 @@ function ProfileScreen({
                 ))}
               </div>
             </div>
+            <div className="p-4" style={{ borderBottom: '1px solid #2a2a2a' }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-800 text-sm">IMG estimé</p>
+                  <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+                    Deurenberg
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-900 text-base" style={{ color: draft.accentColor }}>
+                    {health.bodyFatPct} %
+                  </p>
+                  <p className="text-xs font-700 mt-0.5" style={{ color: '#888' }}>
+                    {health.bodyFatCategory}
+                  </p>
+                </div>
+              </div>
+            </div>
             {[
               { label: 'FC max estimée', sub: '220 − âge', value: `${health.fcMax} bpm` },
               {
@@ -2250,6 +2458,37 @@ function ProfileScreen({
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Streak tolerance */}
+        <div>
+          <label
+            className="block text-xs font-800 tracking-widest uppercase mb-2.5"
+            style={{ color: draft.accentColor }}>
+            Série
+          </label>
+          <div
+            className="rounded-2xl px-4 py-4"
+            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-800 text-sm">Jours sans activité tolérés</p>
+                <p className="text-xs font-600 mt-1" style={{ color: '#555' }}>
+                  Les repos programmés ne comptent pas comme absence
+                </p>
+              </div>
+              <Stepper
+                max={3}
+                min={0}
+                step={1}
+                unit="j"
+                value={draft.streakGraceDays}
+                onChange={(v) => {
+                  update('streakGraceDays', v);
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -2409,8 +2648,10 @@ export const App = () => {
           {screen === Screen.HOME && (
             <HomeScreen
               accent={accent}
+              circuits={circuits}
               currentWeekDays={currentWeekDays}
               profile={profile}
+              weekPrograms={weekPrograms}
               onGoToFreeTabata={openFreeTabata}
               onGoToProfile={() => {
                 navigate(Screen.PROFILE);
