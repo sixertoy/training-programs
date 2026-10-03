@@ -49,6 +49,7 @@ import {
   FLOW_KIND_LABELS,
   isSameDayProgram,
 } from '../../utils';
+import { Button } from '../button';
 import { Stepper } from '../stepper';
 
 interface Circuit {
@@ -434,8 +435,10 @@ function DayActivitiesSheet({
               )}
             </div>
 
-            <button
-              className="w-full rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            <Button
+              className="w-full rounded-2xl py-3 font-800 text-sm transition-all active:scale-95"
+              icon={IconPlus}
+              label="Ajouter une activité"
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -443,9 +446,8 @@ function DayActivitiesSheet({
               }}
               onClick={() => {
                 setAddStep('category');
-              }}>
-              <IconPlus /> Ajouter une activité
-            </button>
+              }}
+            />
           </React.Fragment>
         )}
 
@@ -479,14 +481,14 @@ function DayActivitiesSheet({
                 </button>
               ))}
             </div>
-            <button
+            <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
+              label="Retour"
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('idle');
-              }}>
-              Retour
-            </button>
+              }}
+            />
           </React.Fragment>
         )}
 
@@ -516,24 +518,25 @@ function DayActivitiesSheet({
                 </button>
               ))}
             </div>
-            <button
-              className="w-full mb-2 rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            <Button
+              className="w-full mb-2 rounded-2xl py-3 font-800 text-sm transition-all active:scale-95"
+              icon={IconPlus}
+              label="Nouveau circuit"
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
                 color: accent,
               }}
-              onClick={onCreateCircuit}>
-              <IconPlus /> Nouveau circuit
-            </button>
-            <button
+              onClick={onCreateCircuit}
+            />
+            <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
+              label="Retour"
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
-              }}>
-              Retour
-            </button>
+              }}
+            />
           </React.Fragment>
         )}
 
@@ -602,8 +605,9 @@ function DayActivitiesSheet({
                 </span>
               </button>
             </div>
-            <button
+            <Button
               className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+              label="Ajouter"
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 addActivity(
@@ -614,17 +618,16 @@ function DayActivitiesSheet({
                     name: runningName.trim() || 'Course',
                   }),
                 );
-              }}>
-              Ajouter
-            </button>
-            <button
+              }}
+            />
+            <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
+              label="Retour"
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
-              }}>
-              Retour
-            </button>
+              }}
+            />
           </React.Fragment>
         )}
 
@@ -661,25 +664,26 @@ function DayActivitiesSheet({
               <div className="flex gap-2">
                 {([FlowKind.YOGA, FlowKind.STRETCHING, FlowKind.STRENGTHENING] as const).map(
                   (kind) => (
-                    <button
+                    <Button
                       key={kind}
                       className="flex-1 rounded-xl py-2.5 font-800 text-xs transition-all active:scale-95"
+                      label={FLOW_KIND_LABELS[kind]}
                       style={{
                         backgroundColor: flowKind === kind ? accent : '#1a1a1a',
-                        border: flowKind === kind ? 'none' : '1px solid #2a2a2a',
+                        border: flowKind === kind ? '1px solid transparent' : '1px solid #2a2a2a',
                         color: flowKind === kind ? '#0d0d0d' : '#888',
                       }}
                       onClick={() => {
                         setFlowKind(kind);
-                      }}>
-                      {FLOW_KIND_LABELS[kind]}
-                    </button>
+                      }}
+                    />
                   ),
                 )}
               </div>
             </div>
-            <button
+            <Button
               className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+              label="Ajouter"
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 addActivity(
@@ -689,17 +693,16 @@ function DayActivitiesSheet({
                     name: flowName.trim() || FLOW_KIND_LABELS[flowKind],
                   }),
                 );
-              }}>
-              Ajouter
-            </button>
-            <button
+              }}
+            />
+            <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
+              label="Retour"
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
-              }}>
-              Retour
-            </button>
+              }}
+            />
           </React.Fragment>
         )}
       </div>
@@ -726,24 +729,24 @@ function DayActivitiesSheet({
               « {pendingLabel} ». Continuer ?
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
                 className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+                label="Annuler"
                 style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
                 onClick={() => {
                   setPendingAssign(null);
-                }}>
-                Annuler
-              </button>
-              <button
+                }}
+              />
+              <Button
                 className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+                label="Confirmer"
                 style={{ backgroundColor: accent, color: '#0d0d0d' }}
                 onClick={() => {
                   onAssign(pendingAssign);
                   setPendingAssign(null);
                   onClose();
-                }}>
-                Confirmer
-              </button>
+                }}
+              />
             </div>
           </div>
         </div>
@@ -927,14 +930,13 @@ export function ProgrammePage({
                 <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
                   {weekDateRange}
                 </p>
-                <button
-                  aria-label="Aujourd'hui"
+                <Button
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
                   disabled={isCurrentPeriod}
+                  label="Aujourd'hui"
                   style={{ backgroundColor: '#2a2a2a', color: accent }}
-                  onClick={goToToday}>
-                  Aujourd&apos;hui
-                </button>
+                  onClick={goToToday}
+                />
               </div>
               <button
                 aria-label="Semaine suivante"
@@ -1065,14 +1067,13 @@ export function ProgrammePage({
                 <p className="font-900 text-sm" style={{ color: '#f5f5f5' }}>
                   {formatMonthLabel(monthStart)}
                 </p>
-                <button
-                  aria-label="Aujourd'hui"
+                <Button
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
                   disabled={isCurrentPeriod}
+                  label="Aujourd'hui"
                   style={{ backgroundColor: '#2a2a2a', color: accent }}
-                  onClick={goToToday}>
-                  Aujourd&apos;hui
-                </button>
+                  onClick={goToToday}
+                />
               </div>
               <button
                 aria-label="Mois suivant"

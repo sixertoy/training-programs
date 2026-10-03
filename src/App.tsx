@@ -25,6 +25,7 @@ import {
 } from './assets/icons';
 import { AccentColorPicker } from './components/accent-color-picker';
 import { BottomNav } from './components/bottom-nav';
+import { Button } from './components/button';
 import { ProgrammePage } from './components/programme-page';
 import { Stepper } from './components/stepper';
 import freeTabataDefaults from './config/tabata-free.json';
@@ -652,14 +653,13 @@ function HomeScreen({
         </div>
       </div>
 
-      <button
-        aria-label="Lancer un Tabata libre"
-        className="mx-5 mb-5 rounded-2xl py-3.5 font-900 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+      <Button
+        className="mx-5 mb-5 rounded-2xl py-3.5 font-900 text-sm transition-all active:scale-95"
+        icon={IconFlash}
+        label="Lancer un Tabata libre"
         style={{ backgroundColor: accent, color: '#0d0d0d' }}
-        onClick={onGoToFreeTabata}>
-        <IconFlash />
-        Lancer un Tabata libre
-      </button>
+        onClick={onGoToFreeTabata}
+      />
 
       {!alertDismissed && streakAlert.level !== 'safe' && (
         <div
@@ -730,13 +730,12 @@ function HomeScreen({
           <p className="text-sm font-700" style={{ color: '#ddd' }}>
             {recovery.hardDays} jours intenses sans Flow — planifie une séance de mobilité.
           </p>
-          <button
+          <Button
             className="mt-2 text-xs font-800"
+            label="Ouvrir le programme →"
             style={{ color: accent }}
-            type="button"
-            onClick={onGoToWeekly}>
-            Ouvrir le programme →
-          </button>
+            onClick={onGoToWeekly}
+          />
         </div>
       )}
 
@@ -950,12 +949,12 @@ function HomeScreen({
         </div>
       </div>
 
-      <button
-        className="mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+      <Button
+        className="mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+        label="Voir le programme complet →"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
-        onClick={onGoToWeekly}>
-        Voir le programme complet →
-      </button>
+        onClick={onGoToWeekly}
+      />
     </div>
   );
 }
@@ -1000,12 +999,12 @@ function CircuitsScreen({
             <p className="font-800 text-center" style={{ color: '#555' }}>
               Aucun circuit encore
             </p>
-            <button
+            <Button
               className="px-6 py-3.5 rounded-2xl font-900"
+              label="Créer mon premier circuit"
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
-              onClick={onCreateNew}>
-              Créer mon premier circuit
-            </button>
+              onClick={onCreateNew}
+            />
           </div>
         )}
         {circuits.map((c) => {
@@ -1024,14 +1023,14 @@ function CircuitsScreen({
                       {c.cycles} cycles · {c.rounds} rounds · ~{circuitDurationMin(c)} min
                     </p>
                   </div>
-                  <button
+                  <Button
                     className="text-xs font-800 px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0"
+                    label="Éditer"
                     style={{ backgroundColor: withAlpha(c.color, 0.12), color: c.color }}
                     onClick={() => {
                       onEdit(c.id);
-                    }}>
-                    Éditer
-                  </button>
+                    }}
+                  />
                 </div>
 
                 <div className="flex gap-2 flex-wrap mb-3">
@@ -1299,25 +1298,25 @@ function CreateCircuitScreen({
                       </div>
                       <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
                       <div className="flex gap-1 shrink-0">
-                        <button
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
+                        <Button
+                          className="w-7 h-7 rounded-lg text-sm font-900"
+                          label="↑"
                           style={{ backgroundColor: '#2a2a2a', color: i > 0 ? '#888' : '#333' }}
                           onClick={() => {
                             moveExercise(i, -1);
-                          }}>
-                          ↑
-                        </button>
-                        <button
-                          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-900"
+                          }}
+                        />
+                        <Button
+                          className="w-7 h-7 rounded-lg text-sm font-900"
+                          label="↓"
                           style={{
                             backgroundColor: '#2a2a2a',
                             color: i < exerciseIds.length - 1 ? '#888' : '#333',
                           }}
                           onClick={() => {
                             moveExercise(i, 1);
-                          }}>
-                          ↓
-                        </button>
+                          }}
+                        />
                         <button
                           className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
                           style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
@@ -1332,8 +1331,10 @@ function CreateCircuitScreen({
                 })}
               </div>
             )}
-            <button
-              className="w-full rounded-xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            <Button
+              className="w-full rounded-xl py-3 font-800 text-sm transition-all active:scale-95"
+              icon={IconPlus}
+              label="Ajouter des exercices"
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -1341,26 +1342,27 @@ function CreateCircuitScreen({
               }}
               onClick={() => {
                 setShowPicker(true);
-              }}>
-              <IconPlus /> Ajouter des exercices
-            </button>
+              }}
+            />
           </div>
 
           {/* Save */}
-          <button
-            className="w-full rounded-2xl py-4 font-900 text-base transition-all active:scale-95 flex items-center justify-center gap-2"
+          <Button
+            className="w-full rounded-2xl py-4 font-900 text-base transition-all active:scale-95"
             disabled={!name.trim() || saved}
+            label={
+              saved
+                ? '✓ Circuit enregistré !'
+                : initial
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le circuit'
+            }
             style={{
               backgroundColor: saved ? '#8bcf00' : name.trim() ? accent : '#2a2a2a',
               color: name.trim() ? '#0d0d0d' : '#555',
             }}
-            onClick={handleSave}>
-            {saved
-              ? '✓ Circuit enregistré !'
-              : initial
-                ? 'Enregistrer les modifications'
-                : 'Créer le circuit'}
-          </button>
+            onClick={handleSave}
+          />
         </div>
       </div>
 
@@ -1442,14 +1444,14 @@ function CreateCircuitScreen({
                 );
               })}
             </div>
-            <button
+            <Button
               className="mt-4 w-full rounded-2xl py-3.5 font-900 shrink-0"
+              label={`Confirmer (${exerciseIds.length} exercice${exerciseIds.length !== 1 ? 's' : ''})`}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 setShowPicker(false);
-              }}>
-              Confirmer ({exerciseIds.length} exercice{exerciseIds.length !== 1 ? 's' : ''})
-            </button>
+              }}
+            />
           </div>
         </div>
       )}
@@ -1701,12 +1703,13 @@ function TabataScreen({
     });
   };
 
-  const PHASE_LABELLS = {
+  const PHASE_LABELLS: Partial<Record<TimerPhase, string>> = {
     [TimerPhase.PREP]: 'Préparation',
     [TimerPhase.WORK]: 'Travail',
     [TimerPhase.REST]: 'Repos',
     [TimerPhase.RECOVERY]: 'Récupération',
-  } as const;
+    [TimerPhase.INTER_CYCLE_REST]: 'Repos inter-cycle',
+  };
   const phaseLabel = PHASE_LABELLS[phase] ?? 'Repos inter-cycle';
 
   const openSheet = () => {
@@ -1877,8 +1880,10 @@ function TabataScreen({
                 })}
               </div>
             )}
-            <button
-              className="w-full rounded-xl py-3 mt-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            <Button
+              className="w-full rounded-xl py-3 mt-3 font-800 text-sm transition-all active:scale-95"
+              icon={IconPlus}
+              label="Ajouter des exercices"
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -1886,19 +1891,18 @@ function TabataScreen({
               }}
               onClick={() => {
                 setShowPicker(true);
-              }}>
-              <IconPlus /> Ajouter des exercices
-            </button>
+              }}
+            />
           </div>
         </div>
 
         <div className="shrink-0 mt-4 flex items-center gap-2">
-          <button
+          <Button
             className="flex-1 rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+            label="Appliquer"
             style={{ backgroundColor: accent, color: '#0d0d0d' }}
-            onClick={applyDraft}>
-            Appliquer
-          </button>
+            onClick={applyDraft}
+          />
           {isFree && (
             <button
               aria-label="Reset"
@@ -2041,19 +2045,19 @@ function TabataScreen({
           </div>
 
           {isFree ? (
-            <button
+            <Button
               className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+              label="Recommencer"
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
-              onClick={handleReset}>
-              Recommencer
-            </button>
+              onClick={handleReset}
+            />
           ) : (
-            <button
+            <Button
               className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
+              label="Fermer"
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
-              onClick={onClose}>
-              Fermer
-            </button>
+              onClick={onClose}
+            />
           )}
         </div>
       </div>
@@ -2290,19 +2294,19 @@ function ProfileScreen({
           </label>
           <div className="flex gap-3">
             {([Gender.MALE, Gender.FEMALE] as const).map((g) => (
-              <button
+              <Button
                 key={g}
                 className="flex-1 py-3.5 rounded-xl font-800 capitalize transition-all active:scale-95"
+                label={g === Gender.MALE ? 'Homme' : 'Femme'}
                 style={{
                   backgroundColor: draft.gender === g ? draft.accentColor : '#1a1a1a',
-                  border: draft.gender === g ? 'none' : '1px solid #2a2a2a',
+                  border: draft.gender === g ? '1px solid transparent' : '1px solid #2a2a2a',
                   color: draft.gender === g ? '#0d0d0d' : '#666',
                 }}
                 onClick={() => {
                   update('gender', g);
-                }}>
-                {g === Gender.MALE ? 'Homme' : 'Femme'}
-              </button>
+                }}
+              />
             ))}
           </div>
         </div>
@@ -2521,33 +2525,36 @@ function ProfileScreen({
                 { id: ViewMode.MONTH, label: 'Mois' },
               ] as const
             ).map((option) => (
-              <button
+              <Button
                 key={option.id}
                 className="flex-1 py-3.5 rounded-xl font-800 transition-all active:scale-95"
+                label={option.label}
                 style={{
                   backgroundColor:
                     draft.defaultProgrammeView === option.id ? draft.accentColor : '#1a1a1a',
-                  border: draft.defaultProgrammeView === option.id ? 'none' : '1px solid #2a2a2a',
+                  border:
+                    draft.defaultProgrammeView === option.id
+                      ? '1px solid transparent'
+                      : '1px solid #2a2a2a',
                   color: draft.defaultProgrammeView === option.id ? '#0d0d0d' : '#666',
                 }}
                 onClick={() => {
                   update('defaultProgrammeView', option.id);
-                }}>
-                {option.label}
-              </button>
+                }}
+              />
             ))}
           </div>
         </div>
 
-        <button
+        <Button
           className="w-full rounded-2xl py-4 font-900 text-base transition-all active:scale-95"
+          label="Enregistrer le profil"
           style={{ backgroundColor: draft.accentColor, color: '#0d0d0d' }}
           onClick={() => {
             onSave(draft);
             onBack();
-          }}>
-          Enregistrer le profil
-        </button>
+          }}
+        />
       </div>
     </div>
   );
