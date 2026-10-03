@@ -1,0 +1,9 @@
+{
+  "cycles": 1,
+  "exerciseTime": 20,
+  "prepTime": 10,
+  "recoveryTime": 60,
+  "restBetweenCycles": 60,
+  "restBetweenExercises": 10,
+  "rounds": 8
+}
