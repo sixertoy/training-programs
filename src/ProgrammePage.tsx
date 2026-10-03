@@ -30,6 +30,7 @@ import {
   IconPlus,
   IconWeek,
 } from './assets/icons';
+import { ViewMode } from './enums';
 
 interface DayProgram {
   day: string;
@@ -590,7 +591,7 @@ export default function ProgrammePage({
   onStartSession: (circuitId: string) => void;
   accent: string;
 }) {
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month');
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.MONTH);
   const [weekOffset, setWeekOffset] = useState(0);
   const [assignIndex, setAssignIndex] = useState<number | null>(null);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -639,7 +640,7 @@ export default function ProgrammePage({
 
   const openWeekFromDate = (date: Date) => {
     goToWeekOffset(weekOffsetFromDate(date));
-    setViewMode('week');
+    setViewMode(ViewMode.WEEK);
   };
 
   const viewToggle = (
@@ -648,8 +649,8 @@ export default function ProgrammePage({
       style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
       {(
         [
-          { id: 'week' as const, label: 'Semaine', icon: <IconWeek /> },
-          { id: 'month' as const, label: 'Mois', icon: <IconCalendar /> },
+          { id: ViewMode.WEEK, label: 'Semaine', icon: <IconWeek /> },
+          { id: ViewMode.MONTH, label: 'Mois', icon: <IconCalendar /> },
         ] as const
       ).map((tab) => {
         const active = viewMode === tab.id;
@@ -723,7 +724,7 @@ export default function ProgrammePage({
           </div>
         ) : null}
 
-        {viewMode === 'week' && (
+        {viewMode === ViewMode.WEEK && (
           <>
             <div
               className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
@@ -856,7 +857,7 @@ export default function ProgrammePage({
           </>
         )}
 
-        {viewMode === 'month' && (
+        {viewMode === ViewMode.MONTH && (
           <>
             <div className="mx-5 mb-4 flex items-center justify-between">
               <button
@@ -961,7 +962,7 @@ export default function ProgrammePage({
         )}
       </div>
 
-      {viewMode === 'week' && assignIndex !== null && assignDayDate && (
+      {viewMode === ViewMode.WEEK && assignIndex !== null && assignDayDate && (
         <DayAssignSheet
           accent={accent}
           circuits={circuits}

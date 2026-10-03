@@ -13,6 +13,7 @@ import {
 import BottomNav from './BottomNav';
 import freeTabataDefaults from './config/tabata-free.json';
 import ProgrammePage from './ProgrammePage';
+import { Gender, Screen, TabataMode, TimerPhase } from './enums';
 
 enum CardColor {
   ORANGE = '#FF6B35',
@@ -167,7 +168,7 @@ function computeHealthStats(profile: HealthStatsInput): HealthStats {
   const heightM = profile.heightCm / 100;
   const bmi = profile.weightKg / (heightM * heightM);
   const bmr =
-    profile.gender === 'homme'
+    profile.gender === Gender.MALE
       ? Math.round(
           88.362 + 13.397 * profile.weightKg + 4.799 * profile.heightCm - 5.677 * profile.age,
         )
@@ -175,7 +176,7 @@ function computeHealthStats(profile: HealthStatsInput): HealthStats {
           447.593 + 9.247 * profile.weightKg + 3.098 * profile.heightCm - 4.33 * profile.age,
         );
   const idealWeight = Math.round(
-    profile.gender === 'homme'
+    profile.gender === Gender.MALE
       ? profile.heightCm - 100 - (profile.heightCm - 150) / 4
       : profile.heightCm - 100 - (profile.heightCm - 150) / 2.5,
   );
@@ -345,14 +346,12 @@ const defaultProfile: UserProfile = {
   accentColor: '#cbff47',
   age: 28,
   firstName: 'Alexandre',
-  gender: 'homme',
+  gender: Gender.MALE,
   heightCm: 178,
   lastName: '',
   weightKg: 75,
 };
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-type Gender = 'homme' | 'femme';
-
 const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
 
 function getTodayIndex(date: Date = new Date()): number {
@@ -569,9 +568,6 @@ const WEEK_HISTORY: WeekData[] = [
     year: 2026,
   },
 ];
-
-type Screen = 'home' | 'weekly' | 'circuits' | 'create-circuit' | 'tabata' | 'profile';
-type TabataMode = 'free' | 'planned';
 
 const FREE_TABATA_DEFAULTS: CircuitTiming = freeTabataDefaults;
 
@@ -1404,8 +1400,6 @@ function CreateCircuitScreen({
 
 // ─── Tabata Screen ────────────────────────────────────────────────────────────
 
-type TimerPhase = 'prep' | 'work' | 'rest' | 'interCycleRest' | 'recovery';
-
 type TimerStep = {
   cycle: number;
   round: number;
@@ -1427,10 +1421,10 @@ function getExerciseIndex(round: number, exerciseCount: number): number {
 }
 
 function phaseDuration(phase: TimerPhase, durations: TimerDurations): number {
-  if (phase === 'prep') return durations.prepTime;
-  if (phase === 'work') return durations.workTime;
-  if (phase === 'rest') return durations.restTime;
-  if (phase === 'recovery') return durations.recoveryTime;
+  if (phase === TimerPhase.PREP) return durations.prepTime;
+  if (phase === TimerPhase.WORK) return durations.workTime;
+  if (phase === TimerPhase.REST) return durations.restTime;
+  if (phase === TimerPhase.RECOVERY) return durations.recoveryTime;
   return durations.interCycleRest;
 }
 
@@ -1444,38 +1438,38 @@ function advanceTimerStep(
 
   const { workTime, restTime, interCycleRest, recoveryTime } = durations;
 
-  if (state.phase === 'prep') {
-    return { ...state, cycle: 1, phase: 'work', round: 1, seconds: workTime };
+  if (state.phase === TimerPhase.PREP) {
+    return { ...state, cycle: 1, phase: TimerPhase.WORK, round: 1, seconds: workTime };
   }
 
-  if (state.phase === 'work') {
+  if (state.phase === TimerPhase.WORK) {
     const isLastRound = state.round >= totalRounds;
     const isLastCycle = state.cycle >= totalCycles;
 
     // Repos après le dernier round ignoré : absorbé par le repos inter-cycle / la récupération.
     if (isLastRound) {
       if (!isLastCycle) {
-        return { ...state, phase: 'interCycleRest', seconds: interCycleRest };
+        return { ...state, phase: TimerPhase.INTER_CYCLE_REST, seconds: interCycleRest };
       }
       if (recoveryTime > 0) {
-        return { ...state, phase: 'recovery', seconds: recoveryTime };
+        return { ...state, phase: TimerPhase.RECOVERY, seconds: recoveryTime };
       }
       return { ...state, done: true, seconds: 0 };
     }
 
-    return { ...state, phase: 'rest', seconds: restTime };
+    return { ...state, phase: TimerPhase.REST, seconds: restTime };
   }
 
-  if (state.phase === 'rest') {
+  if (state.phase === TimerPhase.REST) {
     return {
       ...state,
       round: state.round + 1,
-      phase: 'work',
+      phase: TimerPhase.WORK,
       seconds: workTime,
     };
   }
 
-  if (state.phase === 'recovery') {
+  if (state.phase === TimerPhase.RECOVERY) {
     return { ...state, done: true, seconds: 0 };
   }
 
@@ -1483,7 +1477,7 @@ function advanceTimerStep(
     ...state,
     cycle: state.cycle + 1,
     round: 1,
-    phase: 'work',
+    phase: TimerPhase.WORK,
     seconds: workTime,
   };
 }
@@ -1501,7 +1495,7 @@ function TabataScreen({
   accent: string;
   mode: TabataMode;
 }) {
-  const isFree = mode === 'free';
+  const isFree = mode === TabataMode.FREE;
   const [localCircuit, setLocalCircuit] = useState<Circuit>(circuitProp);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -1521,7 +1515,7 @@ function TabataScreen({
     restTime: REST_TIME,
     workTime: WORK_TIME,
   };
-  const initialPhase: TimerPhase = PREP_TIME > 0 ? 'prep' : 'work';
+  const initialPhase: TimerPhase = PREP_TIME > 0 ? TimerPhase.PREP : TimerPhase.WORK;
   const initialSeconds = PREP_TIME > 0 ? PREP_TIME : WORK_TIME;
 
   const exerciseNames =
@@ -1543,20 +1537,20 @@ function TabataScreen({
 
   const exerciseIndex = getExerciseIndex(round, exerciseNames.length);
   const phaseMax = phaseDuration(phase, durations);
-  const isRestPhase = phase === 'rest' || phase === 'interCycleRest' || phase === 'recovery';
+  const isRestPhase = phase === TimerPhase.REST || phase === TimerPhase.INTER_CYCLE_REST || phase === TimerPhase.RECOVERY;
   const phaseColor =
-    phase === 'work'
+    phase === TimerPhase.WORK
       ? accent
-      : phase === 'prep'
+      : phase === TimerPhase.PREP
         ? shiftAccentLightness(accent)
-        : phase === 'recovery'
+        : phase === TimerPhase.RECOVERY
           ? shiftAccentHue(accent, -50)
           : shiftAccentHue(accent, 40);
 
   const resetTimer = (circuit: Circuit = localCircuit) => {
     const prep = circuit.prepTime;
     const work = circuit.exerciseTime;
-    const startPhase: TimerPhase = prep > 0 ? 'prep' : 'work';
+    const startPhase: TimerPhase = prep > 0 ? TimerPhase.PREP : TimerPhase.WORK;
     setCycle(1);
     setRound(1);
     setPhase(startPhase);
@@ -1648,13 +1642,13 @@ function TabataScreen({
   };
 
   const phaseLabel =
-    phase === 'prep'
+    phase === TimerPhase.PREP
       ? 'Préparation'
-      : phase === 'work'
+      : phase === TimerPhase.WORK
         ? 'Travail'
-        : phase === 'rest'
+        : phase === TimerPhase.REST
           ? 'Repos'
-          : phase === 'recovery'
+          : phase === TimerPhase.RECOVERY
             ? 'Récupération'
             : 'Repos inter-cycle';
 
@@ -1677,30 +1671,30 @@ function TabataScreen({
     .filter(Boolean) as Exercise[];
 
   const nextExerciseName =
-    phase === 'prep'
+    phase === TimerPhase.PREP
       ? exerciseNames[0]
-      : phase === 'work'
+      : phase === TimerPhase.WORK
         ? exerciseNames[(exerciseIndex + 1) % exerciseNames.length]
         : exerciseNames[
             getExerciseIndex(round < TOTAL_ROUNDS ? round + 1 : 1, exerciseNames.length)
           ];
 
   const infoContext =
-    phase === 'prep'
+    phase === TimerPhase.PREP
       ? 'Préparation'
-      : phase === 'recovery'
+      : phase === TimerPhase.RECOVERY
         ? 'Fin de séance'
-        : phase === 'interCycleRest'
+        : phase === TimerPhase.INTER_CYCLE_REST
           ? 'Entre cycles'
-          : phase === 'rest'
+          : phase === TimerPhase.REST
             ? 'Repos'
             : 'Exercice actuel';
 
   const infoMain =
-    phase === 'prep' ? 'Préparez-vous' : isRestPhase ? 'Repos' : exerciseNames[exerciseIndex];
+    phase === TimerPhase.PREP ? 'Préparez-vous' : isRestPhase ? 'Repos' : exerciseNames[exerciseIndex];
 
   const showNext =
-    (phase === 'prep' || phase === 'work' || phase === 'rest' || phase === 'interCycleRest') &&
+    (phase === TimerPhase.PREP || phase === TimerPhase.WORK || phase === TimerPhase.REST || phase === TimerPhase.INTER_CYCLE_REST) &&
     exerciseNames.length > 0;
 
   const timingRows: {
@@ -2110,7 +2104,7 @@ function TabataScreen({
           <p className="text-2xl font-900 leading-tight">{infoMain}</p>
           {showNext && (
             <p className="text-base font-700 mt-3" style={{ color: '#888' }}>
-              {phase === 'prep' ? 'Premier' : 'Suivant'} : {nextExerciseName}
+              {phase === TimerPhase.PREP ? 'Premier' : 'Suivant'} : {nextExerciseName}
             </p>
           )}
         </div>
@@ -2220,7 +2214,7 @@ function ProfileScreen({
             Genre
           </label>
           <div className="flex gap-3">
-            {(['homme', 'femme'] as const).map((g) => (
+            {([Gender.MALE, Gender.FEMALE] as const).map((g) => (
               <button
                 key={g}
                 className="flex-1 py-3.5 rounded-xl font-800 capitalize transition-all active:scale-95"
@@ -2232,7 +2226,7 @@ function ProfileScreen({
                 onClick={() => {
                   update('gender', g);
                 }}>
-                {g === 'homme' ? 'Homme' : 'Femme'}
+                {g === Gender.MALE ? 'Homme' : 'Femme'}
               </button>
             ))}
           </div>
@@ -2416,8 +2410,8 @@ function ProfileScreen({
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home');
-  const [prevScreen, setPrevScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>(Screen.HOME);
+  const [prevScreen, setPrevScreen] = useState<Screen>(Screen.HOME);
   const [exercises] = useState<Exercise[]>(initialExercises);
   const [circuits, setCircuits] = useState<Circuit[]>(initialCircuits);
   const [weekPrograms, setWeekPrograms] = useState<Record<string, DayProgram[]>>(() => {
@@ -2427,7 +2421,7 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [editingCircuitId, setEditingCircuitId] = useState<string | null>(null);
   const [sessionCircuit, setSessionCircuit] = useState<Circuit | undefined>();
-  const [tabataMode, setTabataMode] = useState<TabataMode>('free');
+  const [tabataMode, setTabataMode] = useState<TabataMode>(TabataMode.FREE);
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', profile.accentColor);
@@ -2438,25 +2432,25 @@ export default function App() {
     setScreen(s);
   };
   const handleBack = () => {
-    setScreen(prevScreen === screen ? 'home' : prevScreen);
+    setScreen(prevScreen === screen ? Screen.HOME : prevScreen);
   };
 
   const openFreeTabata = () => {
-    setTabataMode('free');
+    setTabataMode(TabataMode.FREE);
     setSessionCircuit(createFreeTabataCircuit(profile.accentColor));
-    navigate('tabata');
+    navigate(Screen.TABATA);
   };
 
   const startSession = (circuit?: Circuit) => {
     if (!circuit) return;
-    setTabataMode('planned');
+    setTabataMode(TabataMode.PLANNED);
     setSessionCircuit(circuit);
-    navigate('tabata');
+    navigate(Screen.TABATA);
   };
 
   const goToCreateCircuit = (id?: string) => {
     setEditingCircuitId(id ?? null);
-    navigate('create-circuit');
+    navigate(Screen.CREATE_CIRCUIT);
   };
 
   const handleSaveCircuit = (c: Circuit) => {
@@ -2489,9 +2483,9 @@ export default function App() {
     : undefined;
   const accent = profile.accentColor;
   const noNav =
-    screen === 'create-circuit' ||
-    screen === 'profile' ||
-    (screen === 'tabata' && tabataMode === 'planned');
+    screen === Screen.CREATE_CIRCUIT ||
+    screen === Screen.PROFILE ||
+    (screen === Screen.TABATA && tabataMode === TabataMode.PLANNED);
 
   return (
     <div
@@ -2506,23 +2500,23 @@ export default function App() {
           width: 'min(100vw, 390px)',
         }}>
         <div className="flex-1 overflow-hidden relative">
-          {screen === 'home' && (
+          {screen === Screen.HOME && (
             <HomeScreen
               accent={accent}
               currentWeekDays={currentWeekDays}
               profile={profile}
               onGoToProfile={() => {
-                navigate('profile');
+                navigate(Screen.PROFILE);
               }}
               onGoToTimer={() => {
                 startSession(todayCircuit);
               }}
               onGoToWeekly={() => {
-                navigate('weekly');
+                navigate(Screen.WEEKLY);
               }}
             />
           )}
-          {screen === 'weekly' && (
+          {screen === Screen.WEEKLY && (
             <ProgrammePage
               accent={accent}
               circuits={circuits}
@@ -2536,7 +2530,7 @@ export default function App() {
               onUpdateDay={handleUpdateDay}
             />
           )}
-          {screen === 'circuits' && (
+          {screen === Screen.CIRCUITS && (
             <CircuitsScreen
               accent={accent}
               circuits={circuits}
@@ -2549,7 +2543,7 @@ export default function App() {
               }}
             />
           )}
-          {screen === 'create-circuit' && (
+          {screen === Screen.CREATE_CIRCUIT && (
             <CreateCircuitScreen
               accent={accent}
               exercises={exercises}
@@ -2558,7 +2552,7 @@ export default function App() {
               onSave={handleSaveCircuit}
             />
           )}
-          {screen === 'tabata' && sessionCircuit && (
+          {screen === Screen.TABATA && sessionCircuit && (
             <TabataScreen
               key={sessionCircuit.id}
               accent={accent}
@@ -2568,7 +2562,7 @@ export default function App() {
               onClose={handleBack}
             />
           )}
-          {screen === 'profile' && (
+          {screen === Screen.PROFILE && (
             <ProfileScreen profile={profile} onBack={handleBack} onSave={setProfile} />
           )}
         </div>
@@ -2577,7 +2571,7 @@ export default function App() {
             accent={accent}
             screen={screen}
             onNavigate={(s) => {
-              if (s === 'tabata') {
+              if (s === Screen.TABATA) {
                 openFreeTabata();
                 return;
               }
