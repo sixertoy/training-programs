@@ -16,7 +16,16 @@ import { AccentColorPicker } from './components/accent-color-picker';
 import { BottomNav } from './components/bottom-nav';
 import { ProgrammePage } from './components/programme-page';
 import freeTabataDefaults from './config/tabata-free.json';
-import { Gender, Screen, TabataMode, TimerPhase } from './enums';
+import { WEEK_HISTORY } from './data/week-history';
+import { ActivityCategory, Gender, Screen, TabataMode, TimerPhase, ViewMode } from './enums';
+import type { DayProgram } from './interfaces';
+import {
+  circuitMuscleKey,
+  dayExerciseCount,
+  dayPrimaryLabel,
+  daySummaryLabel,
+  firstTrainingCircuitId,
+} from './utils';
 
 enum AccentColor {
   LIME = '#CBFF47',
@@ -124,19 +133,22 @@ function shiftAccentHue(hex: string, hueDeg: number, lightnessAmount = 0.28): st
 
 const DAY_SHORTS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
 
-function getNextSession(days: NextSessionDay[], todayIndex: number): NextSession | null {
-  for (let i = todayIndex + 1; i < days.length; i += 1) {
-    const day = days[i];
-    if (!day.isRest && day.circuit !== undefined && day.exercises !== undefined) {
-      return {
-        circuit: day.circuit,
-        circuitId: day.circuitId,
-        day: DAY_SHORTS[i] ?? '',
-        exercises: day.exercises,
-      };
-    }
-  }
-  return null;
+function getNextSession(days: DayProgram[], todayIndex: number): NextSession | null {
+  const nextIndex = days.findIndex(
+    (day, i) => i > todayIndex && !day.isRest && day.activities.length > 0,
+  );
+  if (nextIndex < 0) return null;
+  const day = days[nextIndex];
+  const training = day.activities.find(
+    (activity) => activity.category === ActivityCategory.TRAINING,
+  );
+  const primary = training ?? day.activities[0];
+  return {
+    circuit: primary.name,
+    circuitId: primary.circuitId,
+    day: DAY_SHORTS[nextIndex] ?? '',
+    exercises: dayExerciseCount(day),
+  };
 }
 
 function getBmiCategory(bmi: number): string {
@@ -181,7 +193,7 @@ function computeHealthStats(profile: HealthStatsInput & { accentColor: string })
 }
 
 function computeGlobalStats(
-  weeks: StatsWeek[],
+  weeks: typeof WEEK_HISTORY,
   bodyParts: readonly string[],
   circuitMuscles: Record<string, readonly string[]>,
 ): GlobalStats {
@@ -189,10 +201,7 @@ function computeGlobalStats(
   const totalMin = pastWeeks.reduce((sum, week) => sum + week.stats.totalMin, 0);
   const totalSessions = pastWeeks.reduce((sum, week) => sum + week.stats.sessions, 0);
   const totalExerciseReps = pastWeeks.reduce((sum, week) => {
-    const weekReps = week.days.reduce((daySum, day) => {
-      if (day.isRest || !day.exercises) return daySum;
-      return daySum + day.exercises;
-    }, 0);
+    const weekReps = week.days.reduce((daySum, day) => daySum + dayExerciseCount(day), 0);
     return sum + weekReps;
   }, 0);
   const bodyPartCount: Record<string, number> = {};
@@ -203,9 +212,14 @@ function computeGlobalStats(
 
   for (const week of pastWeeks) {
     for (const day of week.days) {
-      if (!day.isRest && day.circuit) {
-        for (const muscle of circuitMuscles[day.circuit] ?? []) {
-          bodyPartCount[muscle] = (bodyPartCount[muscle] ?? 0) + 1;
+      if (!day.isRest) {
+        for (const activity of day.activities) {
+          if (activity.category === ActivityCategory.TRAINING) {
+            const key = circuitMuscleKey(activity.name);
+            for (const muscle of circuitMuscles[key] ?? []) {
+              bodyPartCount[muscle] = (bodyPartCount[muscle] ?? 0) + 1;
+            }
+          }
         }
       }
     }
@@ -233,13 +247,6 @@ function circuitDurationMin(circuit: CircuitTiming): number {
   );
 }
 
-interface WeekData {
-  isoWeek: number;
-  year: number;
-  days: DayProgram[];
-  stats: { sessions: number; totalMin: number; volume: string };
-}
-
 interface UserProfile {
   firstName: string;
   lastName: string;
@@ -248,28 +255,14 @@ interface UserProfile {
   weightKg: number;
   gender: Gender;
   accentColor: string;
+  defaultProgrammeView: ViewMode;
 }
 
-interface StatsWeek {
-  days: StatsDay[];
-  stats: { sessions: number; totalMin: number };
-}
-interface StatsDay {
-  isRest: boolean;
-  circuit?: string;
-  exercises?: number;
-}
 interface NextSession {
   circuit: string;
   circuitId?: string;
   day: string;
   exercises: number;
-}
-interface NextSessionDay {
-  isRest: boolean;
-  circuit?: string;
-  circuitId?: string;
-  exercises?: number;
 }
 interface HealthStats {
   bmi: number;
@@ -299,14 +292,6 @@ interface Exercise {
   description: string;
   tags: string[];
 }
-interface DayProgram {
-  day: string;
-  short: string;
-  isRest: boolean;
-  circuit?: string;
-  circuitId?: string;
-  exercises?: number;
-}
 interface Circuit {
   id: string;
   name: string;
@@ -333,6 +318,7 @@ interface CircuitTiming {
 const defaultProfile: UserProfile = {
   accentColor: '#cbff47',
   age: 28,
+  defaultProgrammeView: ViewMode.MONTH,
   firstName: 'Alexandre',
   gender: Gender.MALE,
   heightCm: 178,
@@ -423,107 +409,6 @@ const initialExercises: Exercise[] = [
   },
 ];
 
-const WEEK_HISTORY: WeekData[] = [
-  {
-    days: [
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Lundi',
-        exercises: 3,
-        isRest: false,
-        short: 'LUN',
-      },
-      {
-        circuit: 'Cardio HIIT',
-        circuitId: 'c2',
-        day: 'Mardi',
-        exercises: 3,
-        isRest: false,
-        short: 'MAR',
-      },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Jeudi',
-        exercises: 3,
-        isRest: false,
-        short: 'JEU',
-      },
-      {
-        circuit: 'Full Body',
-        circuitId: 'c3',
-        day: 'Vendredi',
-        exercises: 6,
-        isRest: false,
-        short: 'VEN',
-      },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 37,
-    stats: { sessions: 4, totalMin: 187, volume: '12 400 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Pull Day', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Leg Day', day: 'Vendredi', exercises: 6, isRest: false, short: 'VEN' },
-      { circuit: 'Cardio HIIT', day: 'Samedi', exercises: 4, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 36,
-    stats: { sessions: 4, totalMin: 162, volume: '10 800 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { day: 'Lundi', isRest: true, short: 'LUN' },
-      { circuit: 'Force Upper', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { circuit: 'Cardio HIIT', day: 'Mercredi', exercises: 6, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Full Body', day: 'Vendredi', exercises: 7, isRest: false, short: 'VEN' },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { circuit: 'Mobilité', day: 'Dimanche', exercises: 3, isRest: false, short: 'DIM' },
-    ],
-    isoWeek: 35,
-    stats: { sessions: 4, totalMin: 195, volume: '11 200 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { circuit: 'Pull Day', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      { circuit: 'Leg Day', day: 'Jeudi', exercises: 6, isRest: false, short: 'JEU' },
-      { day: 'Vendredi', isRest: true, short: 'VEN' },
-      { circuit: 'Full Body', day: 'Samedi', exercises: 7, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 34,
-    stats: { sessions: 4, totalMin: 210, volume: '13 600 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Cardio HIIT', day: 'Lundi', exercises: 6, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Force Upper', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Force Lower', day: 'Vendredi', exercises: 4, isRest: false, short: 'VEN' },
-      { circuit: 'Mobilité', day: 'Samedi', exercises: 3, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 33,
-    stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
-    year: 2026,
-  },
-];
-
 const FREE_TABATA_DEFAULTS: CircuitTiming = freeTabataDefaults;
 
 function createFreeTabataCircuit(accent: string): Circuit {
@@ -572,7 +457,7 @@ function getWeekStart(weekOffset: number, from: Date = new Date()): Date {
   return startOfWeek(addWeeks(from, -weekOffset), WEEK_START_OPTIONS);
 }
 
-function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undefined {
+function findHistoryWeek(weekStart: Date, history: typeof WEEK_HISTORY) {
   const isoWeek = getISOWeek(weekStart);
   const year = getISOWeekYear(weekStart);
   return history.find((week) => week.isoWeek === isoWeek && week.year === year);
@@ -587,7 +472,7 @@ function resolveWeekDays(
   weekPrograms: Record<string, DayProgram[]>,
 ): DayProgram[] {
   const key = getWeekKey(weekStart);
-  if (weekPrograms[key]) return weekPrograms[key];
+  if (Object.hasOwn(weekPrograms, key)) return weekPrograms[key];
   return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
 }
 
@@ -709,16 +594,13 @@ function HomeScreen({
               Aujourd&apos;hui · {DAY_LABELS[todayIndex]}
             </p>
             <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-              {todayProgram.isRest ? 'Repos' : todayProgram.circuit}
+              {dayPrimaryLabel(todayProgram)}
             </h2>
             <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-              {todayProgram.isRest
-                ? 'Modifier'
-                // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                : `${todayProgram.exercises} exercices · Modifier`}
+              {todayProgram.isRest ? 'Modifier' : `${daySummaryLabel(todayProgram)} · Modifier`}
             </p>
           </button>
-          {!todayProgram.isRest && (
+          {firstTrainingCircuitId(todayProgram) && (
             <button
               aria-label="Lancer le tabata"
               className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
@@ -1423,7 +1305,7 @@ function advanceTimerStep(
 ): TimerStep {
   if (state.done) return state;
 
-  const { workTime, restTime, interCycleRest, recoveryTime } = durations;
+  const { interCycleRest, recoveryTime, restTime, workTime } = durations;
 
   if (state.phase === TimerPhase.PREP) {
     return { ...state, cycle: 1, phase: TimerPhase.WORK, round: 1, seconds: workTime };
@@ -1450,8 +1332,8 @@ function advanceTimerStep(
   if (state.phase === TimerPhase.REST) {
     return {
       ...state,
-      round: state.round + 1,
       phase: TimerPhase.WORK,
+      round: state.round + 1,
       seconds: workTime,
     };
   }
@@ -1463,8 +1345,8 @@ function advanceTimerStep(
   return {
     ...state,
     cycle: state.cycle + 1,
-    round: 1,
     phase: TimerPhase.WORK,
+    round: 1,
     seconds: workTime,
   };
 }
@@ -2386,6 +2268,38 @@ function ProfileScreen({
           />
         </div>
 
+        {/* Default programme view */}
+        <div>
+          <label
+            className="block text-xs font-800 tracking-widest uppercase mb-2.5"
+            style={{ color: draft.accentColor }}>
+            Vue programme
+          </label>
+          <div className="flex gap-3">
+            {(
+              [
+                { id: ViewMode.WEEK, label: 'Semaine' },
+                { id: ViewMode.MONTH, label: 'Mois' },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.id}
+                className="flex-1 py-3.5 rounded-xl font-800 transition-all active:scale-95"
+                style={{
+                  backgroundColor:
+                    draft.defaultProgrammeView === option.id ? draft.accentColor : '#1a1a1a',
+                  border: draft.defaultProgrammeView === option.id ? 'none' : '1px solid #2a2a2a',
+                  color: draft.defaultProgrammeView === option.id ? '#0d0d0d' : '#666',
+                }}
+                onClick={() => {
+                  update('defaultProgrammeView', option.id);
+                }}>
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           className="w-full rounded-2xl py-4 font-900 text-base transition-all active:scale-95"
           style={{ backgroundColor: draft.accentColor, color: '#0d0d0d' }}
@@ -2467,9 +2381,8 @@ export const App = () => {
   const currentWeekDays = resolveWeekDays(getWeekStart(0), weekPrograms);
   const todayIndex = getTodayIndex();
 
-  const todayCircuit = currentWeekDays[todayIndex]?.circuitId
-    ? circuits.find((c) => c.id === currentWeekDays[todayIndex].circuitId)
-    : undefined;
+  const todayCircuitId = firstTrainingCircuitId(currentWeekDays[todayIndex]);
+  const todayCircuit = todayCircuitId ? circuits.find((c) => c.id === todayCircuitId) : undefined;
 
   const editingCircuit = editingCircuitId
     ? circuits.find((c) => c.id === editingCircuitId)
@@ -2514,6 +2427,7 @@ export const App = () => {
             <ProgrammePage
               accent={accent}
               circuits={circuits}
+              defaultViewMode={profile.defaultProgrammeView}
               weekPrograms={weekPrograms}
               onCreateCircuit={() => {
                 goToCreateCircuit();

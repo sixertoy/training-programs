@@ -30,16 +30,25 @@ import {
   IconPlus,
   IconWeek,
 } from '../../assets/icons';
-import { ViewMode } from '../../enums';
-
-interface DayProgram {
-  day: string;
-  short: string;
-  isRest: boolean;
-  circuit?: string;
-  circuitId?: string;
-  exercises?: number;
-}
+import { WEEK_HISTORY } from '../../data/week-history';
+import { ActivityCategory, FlowKind, ViewMode } from '../../enums';
+import type { DayActivity, DayProgram } from '../../interfaces';
+import {
+  ACTIVITY_CATEGORY_LABELS,
+  activityMetaLabel,
+  circuitDurationMin,
+  createFlowActivity,
+  createRunningActivity,
+  createTrainingActivity,
+  dayDurationMin,
+  dayExerciseCount,
+  dayPrimaryLabel,
+  daySummaryLabel,
+  DEFAULT_ACTIVITY_COLORS,
+  firstTrainingCircuitId,
+  FLOW_KIND_LABELS,
+  isSameDayProgram,
+} from '../../utils';
 
 interface Circuit {
   id: string;
@@ -55,125 +64,29 @@ interface Circuit {
   exerciseIds: string[];
 }
 
-interface CircuitTiming {
-  prepTime: number;
-  exerciseTime: number;
-  restBetweenExercises: number;
-  rounds: number;
-  cycles: number;
-  restBetweenCycles: number;
-  recoveryTime: number;
+type AddStep = 'idle' | 'category' | 'training' | 'running' | 'flow';
+
+const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const DAY_LETTER_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
+
+const CATEGORY_ADD_STEP: Record<ActivityCategory, Exclude<AddStep, 'idle' | 'category'>> = {
+  [ActivityCategory.FLOW]: 'flow',
+  [ActivityCategory.RUNNING]: 'running',
+  [ActivityCategory.TRAINING]: 'training',
+};
+
+function pickTone(
+  isToday: boolean,
+  isDone: boolean,
+  todayTone: string,
+  doneTone: string,
+  idleTone: string,
+) {
+  if (isToday) return todayTone;
+  if (isDone) return doneTone;
+  return idleTone;
 }
-
-interface WeekData {
-  isoWeek: number;
-  year: number;
-  days: DayProgram[];
-  stats: { sessions: number; totalMin: number; volume: string };
-}
-
-
-
-const WEEK_HISTORY: WeekData[] = [
-  {
-    days: [
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Lundi',
-        exercises: 3,
-        isRest: false,
-        short: 'LUN',
-      },
-      {
-        circuit: 'Cardio HIIT',
-        circuitId: 'c2',
-        day: 'Mardi',
-        exercises: 3,
-        isRest: false,
-        short: 'MAR',
-      },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      {
-        circuit: 'Force Upper',
-        circuitId: 'c1',
-        day: 'Jeudi',
-        exercises: 3,
-        isRest: false,
-        short: 'JEU',
-      },
-      {
-        circuit: 'Full Body',
-        circuitId: 'c3',
-        day: 'Vendredi',
-        exercises: 6,
-        isRest: false,
-        short: 'VEN',
-      },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 37,
-    stats: { sessions: 4, totalMin: 187, volume: '12 400 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Pull Day', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Leg Day', day: 'Vendredi', exercises: 6, isRest: false, short: 'VEN' },
-      { circuit: 'Cardio HIIT', day: 'Samedi', exercises: 4, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 36,
-    stats: { sessions: 4, totalMin: 162, volume: '10 800 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { day: 'Lundi', isRest: true, short: 'LUN' },
-      { circuit: 'Force Upper', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { circuit: 'Cardio HIIT', day: 'Mercredi', exercises: 6, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Full Body', day: 'Vendredi', exercises: 7, isRest: false, short: 'VEN' },
-      { day: 'Samedi', isRest: true, short: 'SAM' },
-      { circuit: 'Mobilité', day: 'Dimanche', exercises: 3, isRest: false, short: 'DIM' },
-    ],
-    isoWeek: 35,
-    stats: { sessions: 4, totalMin: 195, volume: '11 200 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Push Day', day: 'Lundi', exercises: 5, isRest: false, short: 'LUN' },
-      { circuit: 'Pull Day', day: 'Mardi', exercises: 5, isRest: false, short: 'MAR' },
-      { day: 'Mercredi', isRest: true, short: 'MER' },
-      { circuit: 'Leg Day', day: 'Jeudi', exercises: 6, isRest: false, short: 'JEU' },
-      { day: 'Vendredi', isRest: true, short: 'VEN' },
-      { circuit: 'Full Body', day: 'Samedi', exercises: 7, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 34,
-    stats: { sessions: 4, totalMin: 210, volume: '13 600 kg' },
-    year: 2026,
-  },
-  {
-    days: [
-      { circuit: 'Cardio HIIT', day: 'Lundi', exercises: 6, isRest: false, short: 'LUN' },
-      { day: 'Mardi', isRest: true, short: 'MAR' },
-      { circuit: 'Force Upper', day: 'Mercredi', exercises: 5, isRest: false, short: 'MER' },
-      { day: 'Jeudi', isRest: true, short: 'JEU' },
-      { circuit: 'Force Lower', day: 'Vendredi', exercises: 4, isRest: false, short: 'VEN' },
-      { circuit: 'Mobilité', day: 'Samedi', exercises: 3, isRest: false, short: 'SAM' },
-      { day: 'Dimanche', isRest: true, short: 'DIM' },
-    ],
-    isoWeek: 33,
-    stats: { sessions: 4, totalMin: 148, volume: '9 500 kg' },
-    year: 2026,
-  },
-];
 
 function withAlpha(hex: string, opacity: number): string {
   const alpha = Math.round(opacity * 255)
@@ -181,24 +94,6 @@ function withAlpha(hex: string, opacity: number): string {
     .padStart(2, '0');
   return hex + alpha;
 }
-
-function circuitDurationMin(circuit: CircuitTiming): number {
-  return Math.max(
-    1,
-    Math.round(
-      (circuit.prepTime +
-        circuit.cycles *
-          (circuit.rounds * (circuit.exerciseTime + circuit.restBetweenExercises) +
-            circuit.restBetweenCycles) +
-        circuit.recoveryTime) /
-        60,
-    ),
-  );
-}
-
-const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-
-const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
 
 function getTodayIndex(date: Date = new Date()): number {
   return (getDay(date) + 6) % 7;
@@ -241,10 +136,10 @@ function getWeekDayNumbers(weekStart: Date): string[] {
   }).map((day) => format(day, 'dd'));
 }
 
-function findHistoryWeek(weekStart: Date, history: WeekData[]): WeekData | undefined {
+function findHistoryWeek(weekStart: Date) {
   const isoWeek = getISOWeek(weekStart);
   const year = getISOWeekYear(weekStart);
-  return history.find((week) => week.isoWeek === isoWeek && week.year === year);
+  return WEEK_HISTORY.find((week) => week.isoWeek === isoWeek && week.year === year);
 }
 
 function getWeekKey(weekStart: Date): string {
@@ -256,21 +151,13 @@ function resolveWeekDays(
   weekPrograms: Record<string, DayProgram[]>,
 ): DayProgram[] {
   const key = getWeekKey(weekStart);
-  if (weekPrograms[key]) return weekPrograms[key];
-  return findHistoryWeek(weekStart, WEEK_HISTORY)?.days ?? WEEK_HISTORY[0].days;
+  if (Object.hasOwn(weekPrograms, key)) return weekPrograms[key];
+  return findHistoryWeek(weekStart)?.days ?? WEEK_HISTORY[0].days;
 }
 
 function isPastCalendarDay(dayDate: Date, now: Date = new Date()): boolean {
   return isBefore(startOfDay(dayDate), startOfDay(now));
 }
-
-function isSameAssignment(a: DayProgram, b: DayProgram): boolean {
-  if (a.isRest && b.isRest) return true;
-  if (a.isRest || b.isRest) return false;
-  return a.circuitId === b.circuitId;
-}
-
-const DAY_LETTER_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 function getMonthStart(monthOffset: number, from: Date = new Date()): Date {
   return startOfMonth(addMonths(from, -monthOffset));
@@ -302,11 +189,10 @@ function computePeriodStats(
   let exercises = 0;
   for (const date of days) {
     const day = getDayProgram(date, weekPrograms);
-    if (!day.isRest) {
-      sessions += 1;
-      exercises += day.exercises ?? 0;
-      const circuit = day.circuitId ? circuits.find((c) => c.id === day.circuitId) : undefined;
-      if (circuit) totalMin += circuitDurationMin(circuit);
+    if (!day.isRest && day.activities.length > 0) {
+      sessions += day.activities.length;
+      exercises += dayExerciseCount(day);
+      totalMin += dayDurationMin(day, circuits);
     }
   }
   return { exercises, sessions, totalMin };
@@ -372,7 +258,7 @@ function PeriodStatsRow({
   );
 }
 
-function DayAssignSheet({
+function DayActivitiesSheet({
   accent,
   circuits,
   day,
@@ -393,36 +279,66 @@ function DayAssignSheet({
   accent: string;
   requiresConfirmation: boolean;
 }) {
+  const [draft, setDraft] = useState<DayProgram>(day);
+  const [addStep, setAddStep] = useState<AddStep>('idle');
   const [pendingAssign, setPendingAssign] = useState<DayProgram | null>(null);
+  const [runningName, setRunningName] = useState('Course');
+  const [runningDistance, setRunningDistance] = useState('5');
+  const [runningDuration, setRunningDuration] = useState('30');
+  const [runningInterval, setRunningInterval] = useState(false);
+  const [flowName, setFlowName] = useState('Session flow');
+  const [flowDuration, setFlowDuration] = useState('20');
+  const [flowKind, setFlowKind] = useState<FlowKind>(FlowKind.YOGA);
 
-  const requestAssign = (next: DayProgram) => {
-    if (isSameAssignment(day, next)) {
-      onClose();
+  const persist = (next: DayProgram, closeAfter = false) => {
+    if (isSameDayProgram(day, next)) {
+      setDraft(next);
+      if (closeAfter) onClose();
       return;
     }
     if (requiresConfirmation) {
       setPendingAssign(next);
       return;
     }
+    setDraft(next);
     onAssign(next);
+    if (closeAfter) onClose();
   };
 
-  const pendingLabel = pendingAssign
-    ? pendingAssign.isRest
-      ? 'Repos'
-      : (pendingAssign.circuit ?? 'Circuit')
-    : '';
+  const setRest = () => {
+    persist({ ...draft, activities: [], isRest: true }, true);
+  };
+
+  const removeActivity = (activityId: string) => {
+    const activities = draft.activities.filter((activity) => activity.id !== activityId);
+    persist({ ...draft, activities, isRest: activities.length === 0 });
+  };
+
+  const addActivity = (activity: DayActivity) => {
+    const activities = [...draft.activities, activity];
+    setAddStep('idle');
+    persist({ ...draft, activities, isRest: false });
+  };
+
+  let pendingLabel = '';
+  if (pendingAssign) {
+    pendingLabel = pendingAssign.isRest ? 'Repos' : dayPrimaryLabel(pendingAssign);
+  }
 
   return (
-    <div
-      className="absolute inset-0 flex flex-col justify-end"
-      style={{ backgroundColor: '#00000085', zIndex: 50 }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !pendingAssign) onClose();
-      }}>
+    <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 50 }}>
+      <button
+        aria-label="Fermer"
+        className="absolute inset-0"
+        style={{ backgroundColor: '#00000085' }}
+        type="button"
+        onClick={() => {
+          if (!pendingAssign) onClose();
+        }}
+      />
       <div
-        className="rounded-t-3xl px-5 pt-5 pb-8"
-        style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '75%' }}>
+        className="relative rounded-t-3xl px-5 pt-5 pb-8 overflow-y-auto"
+        style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '85%' }}>
         <div className="flex items-center justify-between mb-5">
           <div>
             <p className="font-900 text-lg">{DAY_LABELS[dayIndex]}</p>
@@ -438,116 +354,378 @@ function DayAssignSheet({
           </button>
         </div>
 
-        <button
-          className="w-full flex items-center gap-4 rounded-2xl px-4 py-3 mb-3 transition-all active:opacity-70"
-          style={{
-            backgroundColor: day.isRest ? '#2a2a2a' : '#1a1a1a',
-            border: day.isRest ? `1px solid ${withAlpha(accent, 0.3)}` : '1px solid #2a2a2a',
-          }}
-          onClick={() => {
-            requestAssign({
-              ...day,
-              circuit: undefined,
-              circuitId: undefined,
-              exercises: undefined,
-              isRest: true,
-            });
-          }}>
-          <IconCouch />
-          <span className="font-800 flex-1 text-left">Repos</span>
-          {day.isRest && (
-            <span
-              className="w-5 h-5 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: accent }}>
-              <svg
-                fill="none"
-                height="10"
-                stroke="#000"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3.5"
-                viewBox="0 0 24 24"
-                width="10">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </span>
-          )}
-        </button>
+        {addStep === 'idle' && (
+          <React.Fragment>
+            <button
+              className="w-full flex items-center gap-4 rounded-2xl px-4 py-3 mb-3 transition-all active:opacity-70"
+              style={{
+                backgroundColor: draft.isRest ? '#2a2a2a' : '#1a1a1a',
+                border: draft.isRest ? `1px solid ${withAlpha(accent, 0.3)}` : '1px solid #2a2a2a',
+              }}
+              onClick={setRest}>
+              <IconCouch />
+              <span className="font-800 flex-1 text-left">Repos</span>
+              {draft.isRest && (
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: accent }}>
+                  <svg
+                    fill="none"
+                    height="10"
+                    stroke="#000"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="3.5"
+                    viewBox="0 0 24 24"
+                    width="10">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              )}
+            </button>
 
-        <div className="space-y-2 overflow-y-auto" style={{ maxHeight: 220 }}>
-          {circuits.map((c) => {
-            const selected = !day.isRest && day.circuitId === c.id;
-            return (
-              <button
-                key={c.id}
-                className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 transition-all active:opacity-70"
-                style={{
-                  backgroundColor: selected ? withAlpha(c.color, 0.1) : '#1a1a1a',
-                  border: selected ? `1px solid ${withAlpha(c.color, 0.4)}` : '1px solid #2a2a2a',
-                }}
-                onClick={() => {
-                  requestAssign({
-                    ...day,
-                    circuit: c.name,
-                    circuitId: c.id,
-                    exercises: c.exerciseIds.length,
-                    isRest: false,
-                  });
-                }}>
+            <p
+              className="text-xs font-800 tracking-widest uppercase mb-2.5"
+              style={{ color: '#555' }}>
+              Activités journalières
+            </p>
+
+            <div className="space-y-2 overflow-y-auto mb-3" style={{ maxHeight: 240 }}>
+              {draft.activities.length === 0 ? (
                 <div
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: c.color }}
-                />
-                <div className="flex-1 text-left">
-                  <p className="font-800 text-sm">{c.name}</p>
-                  <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                    {c.exerciseIds.length} exo · {c.rounds} rounds · {c.cycles} cycles · ~
-                    {circuitDurationMin(c)} min
+                  className="rounded-2xl px-4 py-6 text-center"
+                  style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                  <p className="text-sm font-700" style={{ color: '#555' }}>
+                    Aucune activité pour ce jour
                   </p>
                 </div>
-                {selected && (
-                  <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: c.color }}>
-                    <svg
-                      fill="none"
-                      height="10"
-                      stroke="#000"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="3.5"
-                      viewBox="0 0 24 24"
-                      width="10">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              ) : (
+                draft.activities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="w-full flex items-center gap-3 rounded-2xl px-4 py-3"
+                    style={{
+                      backgroundColor: withAlpha(activity.color, 0.1),
+                      border: `1px solid ${withAlpha(activity.color, 0.35)}`,
+                    }}>
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: activity.color }}
+                    />
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-800 text-sm truncate">{activity.name}</p>
+                      <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+                        {ACTIVITY_CATEGORY_LABELS[activity.category]} ·{' '}
+                        {activityMetaLabel(activity, circuits)}
+                      </p>
+                    </div>
+                    <button
+                      aria-label="Retirer l'activité"
+                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: '#2a2a2a', color: '#888' }}
+                      onClick={() => {
+                        removeActivity(activity.id);
+                      }}>
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
 
-        <button
-          className="w-full mt-3 rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-          style={{
-            backgroundColor: '#1a1a1a',
-            border: `1px dashed ${withAlpha(accent, 0.3)}`,
-            color: accent,
-          }}
-          onClick={onCreateCircuit}>
-          <IconPlus /> Nouveau circuit
-        </button>
+            <button
+              className="w-full rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+              style={{
+                backgroundColor: '#1a1a1a',
+                border: `1px dashed ${withAlpha(accent, 0.3)}`,
+                color: accent,
+              }}
+              onClick={() => {
+                setAddStep('category');
+              }}>
+              <IconPlus /> Ajouter une activité
+            </button>
+          </React.Fragment>
+        )}
+
+        {addStep === 'category' && (
+          <React.Fragment>
+            <p className="font-900 text-base mb-3">Choisir une catégorie</p>
+            <div className="space-y-2 mb-3">
+              {(
+                [
+                  ActivityCategory.TRAINING,
+                  ActivityCategory.RUNNING,
+                  ActivityCategory.FLOW,
+                ] as const
+              ).map((category) => (
+                <button
+                  key={category}
+                  className="w-full rounded-2xl px-4 py-3.5 font-800 text-left transition-all active:opacity-70"
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f5f5f5',
+                  }}
+                  onClick={() => {
+                    setAddStep(CATEGORY_ADD_STEP[category]);
+                  }}>
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full mr-3"
+                    style={{ backgroundColor: DEFAULT_ACTIVITY_COLORS[category] }}
+                  />
+                  {ACTIVITY_CATEGORY_LABELS[category]}
+                </button>
+              ))}
+            </div>
+            <button
+              className="w-full rounded-2xl py-3 font-800 text-sm"
+              style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
+              onClick={() => {
+                setAddStep('idle');
+              }}>
+              Retour
+            </button>
+          </React.Fragment>
+        )}
+
+        {addStep === 'training' && (
+          <React.Fragment>
+            <p className="font-900 text-base mb-3">Training — circuits</p>
+            <div className="space-y-2 overflow-y-auto mb-3" style={{ maxHeight: 240 }}>
+              {circuits.map((c) => (
+                <button
+                  key={c.id}
+                  className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 transition-all active:opacity-70"
+                  style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                  onClick={() => {
+                    addActivity(createTrainingActivity(c));
+                  }}>
+                  <div
+                    className="w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: c.color }}
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="font-800 text-sm">{c.name}</p>
+                    <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
+                      {c.exerciseIds.length} exo · {c.rounds} rounds · {c.cycles} cycles · ~
+                      {circuitDurationMin(c)} min
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              className="w-full mb-2 rounded-2xl py-3 font-800 text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+              style={{
+                backgroundColor: '#1a1a1a',
+                border: `1px dashed ${withAlpha(accent, 0.3)}`,
+                color: accent,
+              }}
+              onClick={onCreateCircuit}>
+              <IconPlus /> Nouveau circuit
+            </button>
+            <button
+              className="w-full rounded-2xl py-3 font-800 text-sm"
+              style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
+              onClick={() => {
+                setAddStep('category');
+              }}>
+              Retour
+            </button>
+          </React.Fragment>
+        )}
+
+        {addStep === 'running' && (
+          <React.Fragment>
+            <p className="font-900 text-base mb-3">Running</p>
+            <div className="space-y-3 mb-3">
+              <input
+                className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
+                placeholder="Nom"
+                style={{
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #2a2a2a',
+                  color: '#f5f5f5',
+                }}
+                type="text"
+                value={runningName}
+                onChange={(e) => {
+                  setRunningName(e.target.value);
+                }}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
+                  placeholder="Distance (km)"
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f5f5f5',
+                  }}
+                  type="number"
+                  value={runningDistance}
+                  onChange={(e) => {
+                    setRunningDistance(e.target.value);
+                  }}
+                />
+                <input
+                  className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
+                  placeholder="Durée (min)"
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #2a2a2a',
+                    color: '#f5f5f5',
+                  }}
+                  type="number"
+                  value={runningDuration}
+                  onChange={(e) => {
+                    setRunningDuration(e.target.value);
+                  }}
+                />
+              </div>
+              <button
+                className="w-full rounded-2xl px-4 py-3.5 font-800 flex items-center justify-between transition-all active:scale-95"
+                style={{
+                  backgroundColor: runningInterval ? withAlpha(accent, 0.15) : '#1a1a1a',
+                  border: runningInterval
+                    ? `1px solid ${withAlpha(accent, 0.4)}`
+                    : '1px solid #2a2a2a',
+                  color: runningInterval ? accent : '#ccc',
+                }}
+                onClick={() => {
+                  setRunningInterval((v) => !v);
+                }}>
+                Fractionné
+                <span
+                  className="w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: runningInterval ? accent : '#2a2a2a',
+                    color: runningInterval ? '#0d0d0d' : '#666',
+                  }}>
+                  {runningInterval ? '✓' : ''}
+                </span>
+              </button>
+            </div>
+            <button
+              className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+              style={{ backgroundColor: accent, color: '#0d0d0d' }}
+              onClick={() => {
+                addActivity(
+                  createRunningActivity({
+                    distanceKm: Number(runningDistance) || undefined,
+                    durationMin: Number(runningDuration) || undefined,
+                    isInterval: runningInterval,
+                    name: runningName.trim() || 'Course',
+                  }),
+                );
+              }}>
+              Ajouter
+            </button>
+            <button
+              className="w-full rounded-2xl py-3 font-800 text-sm"
+              style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
+              onClick={() => {
+                setAddStep('category');
+              }}>
+              Retour
+            </button>
+          </React.Fragment>
+        )}
+
+        {addStep === 'flow' && (
+          <React.Fragment>
+            <p className="font-900 text-base mb-3">Flow</p>
+            <div className="space-y-3 mb-3">
+              <input
+                className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
+                placeholder="Nom"
+                style={{
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #2a2a2a',
+                  color: '#f5f5f5',
+                }}
+                type="text"
+                value={flowName}
+                onChange={(e) => {
+                  setFlowName(e.target.value);
+                }}
+              />
+              <input
+                className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
+                placeholder="Durée (min)"
+                style={{
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #2a2a2a',
+                  color: '#f5f5f5',
+                }}
+                type="number"
+                value={flowDuration}
+                onChange={(e) => {
+                  setFlowDuration(e.target.value);
+                }}
+              />
+              <div className="flex gap-2">
+                {([FlowKind.YOGA, FlowKind.STRETCHING, FlowKind.STRENGTHENING] as const).map(
+                  (kind) => (
+                    <button
+                      key={kind}
+                      className="flex-1 rounded-xl py-2.5 font-800 text-xs transition-all active:scale-95"
+                      style={{
+                        backgroundColor: flowKind === kind ? accent : '#1a1a1a',
+                        border: flowKind === kind ? 'none' : '1px solid #2a2a2a',
+                        color: flowKind === kind ? '#0d0d0d' : '#888',
+                      }}
+                      onClick={() => {
+                        setFlowKind(kind);
+                      }}>
+                      {FLOW_KIND_LABELS[kind]}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+            <button
+              className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
+              style={{ backgroundColor: accent, color: '#0d0d0d' }}
+              onClick={() => {
+                addActivity(
+                  createFlowActivity({
+                    durationMin: Number(flowDuration) || undefined,
+                    flowKind,
+                    name: flowName.trim() || FLOW_KIND_LABELS[flowKind],
+                  }),
+                );
+              }}>
+              Ajouter
+            </button>
+            <button
+              className="w-full rounded-2xl py-3 font-800 text-sm"
+              style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
+              onClick={() => {
+                setAddStep('category');
+              }}>
+              Retour
+            </button>
+          </React.Fragment>
+        )}
       </div>
 
       {pendingAssign && (
         <div
           className="absolute inset-0 flex items-center justify-center px-6"
-          style={{ backgroundColor: '#000000a0', zIndex: 60 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPendingAssign(null);
-          }}>
+          style={{ zIndex: 60 }}>
+          <button
+            aria-label="Annuler"
+            className="absolute inset-0"
+            style={{ backgroundColor: '#000000a0' }}
+            type="button"
+            onClick={() => {
+              setPendingAssign(null);
+            }}
+          />
           <div
-            className="w-full rounded-2xl p-5"
+            className="relative w-full rounded-2xl p-5"
             style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a' }}>
             <p className="font-900 text-lg mb-2">Confirmer la modification</p>
             <p className="text-sm font-600 mb-5" style={{ color: '#888' }}>
@@ -568,6 +746,8 @@ function DayAssignSheet({
                 style={{ backgroundColor: accent, color: '#0d0d0d' }}
                 onClick={() => {
                   onAssign(pendingAssign);
+                  setPendingAssign(null);
+                  onClose();
                 }}>
                 Confirmer
               </button>
@@ -582,6 +762,7 @@ function DayAssignSheet({
 export function ProgrammePage({
   accent,
   circuits,
+  defaultViewMode = ViewMode.MONTH,
   onCreateCircuit,
   onStartSession,
   onUpdateDay,
@@ -593,10 +774,11 @@ export function ProgrammePage({
   onCreateCircuit: () => void;
   onStartSession: (circuitId: string) => void;
   accent: string;
+  defaultViewMode?: ViewMode;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.MONTH);
+  const [viewMode, setViewMode] = useState<ViewMode>(defaultViewMode);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [assignIndex, setAssignIndex] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const isCurrentWeek = weekOffset === 0;
@@ -607,7 +789,6 @@ export function ProgrammePage({
   const weekLabel = formatWeekLabel(weekStart);
   const weekDateRange = formatDateRange(weekStart);
   const dayNumbers = getWeekDayNumbers(weekStart);
-  const assignDayDate = assignIndex !== null ? addDays(weekStart, assignIndex) : null;
 
   const monthStart = getMonthStart(monthOffset);
   const monthGridDays = getMonthGridDays(monthStart);
@@ -618,9 +799,13 @@ export function ProgrammePage({
   const headerDateTitle = format(today, 'd MMMM yyyy', { locale: fr });
   const todayIndex = getTodayIndex(today);
   const todayProgram = resolveWeekDays(getWeekStart(0), weekPrograms)[todayIndex];
-  const todayCircuitId = todayProgram.circuitId;
-  const canStartToday =
-    todayProgram !== undefined && !todayProgram.isRest && todayCircuitId !== undefined;
+  const todayCircuitId = firstTrainingCircuitId(todayProgram);
+  const canStartToday = !todayProgram.isRest && todayCircuitId !== undefined;
+
+  const selectedWeekStart = selectedDate ? startOfWeek(selectedDate, WEEK_START_OPTIONS) : null;
+  const selectedDayIndex = selectedDate !== null ? getTodayIndex(selectedDate) : null;
+  const selectedDayProgram =
+    selectedDate !== null ? getDayProgram(selectedDate, weekPrograms) : null;
 
   const goToWeekOffset = (nextOffset: number) => {
     setWeekOffset(nextOffset);
@@ -641,9 +826,8 @@ export function ProgrammePage({
     setMonthOffset(0);
   };
 
-  const openWeekFromDate = (date: Date) => {
-    goToWeekOffset(weekOffsetFromDate(date));
-    setViewMode(ViewMode.WEEK);
+  const openDay = (date: Date) => {
+    setSelectedDate(date);
   };
 
   const viewToggle = (
@@ -706,10 +890,10 @@ export function ProgrammePage({
                   Aujourd&apos;hui · {DAY_LABELS[todayIndex]}
                 </p>
                 <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
-                  {todayProgram.circuit}
+                  {dayPrimaryLabel(todayProgram)}
                 </h2>
                 <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-                  {todayProgram.exercises} exercices
+                  {daySummaryLabel(todayProgram)}
                 </p>
               </div>
               <button
@@ -779,9 +963,9 @@ export function ProgrammePage({
                 const isPastDay = isPastCalendarDay(dayDate);
                 const isDone = isPastDay && !day.isRest;
                 return (
-                  <div
-                    key={day.day}
-                    className="flex items-center gap-4 rounded-xl px-4 py-3.5 cursor-pointer"
+                  <button
+                    key={`${day.day}-${day.short}`}
+                    className="w-full flex items-center gap-4 rounded-xl px-4 py-3.5 text-left"
                     style={{
                       backgroundColor: isToday ? '#2a2a2a' : '#1a1a1a',
                       border: isToday
@@ -789,20 +973,21 @@ export function ProgrammePage({
                         : '1px solid #2a2a2a',
                       opacity: isPastDay && day.isRest ? 0.45 : 1,
                     }}
+                    type="button"
                     onClick={() => {
-                      setAssignIndex(i);
+                      openDay(dayDate);
                     }}>
                     <div className="w-10 text-center">
                       <p
                         className="text-xs font-800 tracking-wider"
                         style={{
-                          color: isToday ? accent : isDone ? withAlpha(accent, 0.4) : '#555',
+                          color: pickTone(isToday, isDone, accent, withAlpha(accent, 0.4), '#555'),
                         }}>
                         {day.short}
                       </p>
                       <p
                         className="text-lg font-900"
-                        style={{ color: isToday ? '#fff' : isDone ? '#888' : '#333' }}>
+                        style={{ color: pickTone(isToday, isDone, '#fff', '#888', '#333') }}>
                         {dayNumbers[i]}
                       </p>
                     </div>
@@ -818,12 +1003,23 @@ export function ProgrammePage({
                       <div className="flex-1 min-w-0">
                         <p
                           className="font-800 text-sm truncate"
-                          style={{ color: isToday ? '#fff' : isDone ? '#ccc' : '#888' }}>
-                          {day.circuit}
+                          style={{ color: pickTone(isToday, isDone, '#fff', '#ccc', '#888') }}>
+                          {dayPrimaryLabel(day)}
                         </p>
                         <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                          {day.exercises} exercices
+                          {daySummaryLabel(day)}
                         </p>
+                        {day.activities.length > 1 && (
+                          <div className="flex gap-1 mt-1.5">
+                            {day.activities.map((activity) => (
+                              <span
+                                key={activity.id}
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: activity.color }}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                     {isToday && (
@@ -853,7 +1049,7 @@ export function ProgrammePage({
                     <span style={{ color: '#333', flexShrink: 0 }}>
                       <IconChevronRight />
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -910,7 +1106,7 @@ export function ProgrammePage({
                       style={{ color: '#555' }}>
                       {letter}
                     </div>
-                  )
+                  );
                 })}
                 {Array.from({ length: 6 }, (_, weekRow) => {
                   const rowStart = monthGridDays[weekRow * 7];
@@ -929,21 +1125,22 @@ export function ProgrammePage({
                         const isTodayCell = isSameDay(date, today);
                         const isSelected = isTodayCell && todayInMonth;
                         const program = getDayProgram(date, weekPrograms);
-                        const circuitColor = program.circuitId
-                          ? circuits.find((c) => c.id === program.circuitId)?.color
-                          : undefined;
+                        const dotColor = program.activities[0]?.color;
+                        let dayNumberColor = '#ccc';
+                        if (isSelected) dayNumberColor = '#0d0d0d';
+                        else if (!inMonth) dayNumberColor = '#333';
                         return (
                           <button
                             key={date.toISOString()}
                             className="flex flex-col items-center justify-center py-1.5 gap-0.5"
                             onClick={() => {
-                              openWeekFromDate(date);
+                              openDay(date);
                             }}>
                             <span
                               className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-800"
                               style={{
                                 backgroundColor: isSelected ? accent : 'transparent',
-                                color: isSelected ? '#0d0d0d' : inMonth ? '#ccc' : '#333',
+                                color: dayNumberColor,
                               }}>
                               {format(date, 'dd')}
                             </span>
@@ -951,9 +1148,7 @@ export function ProgrammePage({
                               className="w-1.5 h-1.5 rounded-full"
                               style={{
                                 backgroundColor:
-                                  !program.isRest && circuitColor && inMonth
-                                    ? circuitColor
-                                    : 'transparent',
+                                  !program.isRest && dotColor && inMonth ? dotColor : 'transparent',
                               }}
                             />
                           </button>
@@ -968,23 +1163,23 @@ export function ProgrammePage({
         )}
       </div>
 
-      {viewMode === ViewMode.WEEK && assignIndex !== null && assignDayDate && (
-        <DayAssignSheet
+      {selectedDate && selectedWeekStart && selectedDayIndex !== null && selectedDayProgram && (
+        <DayActivitiesSheet
+          key={selectedDate.toISOString()}
           accent={accent}
           circuits={circuits}
-          day={weekDays[assignIndex]}
-          dayDate={assignDayDate}
-          dayIndex={assignIndex}
-          requiresConfirmation={isPastCalendarDay(assignDayDate)}
+          day={selectedDayProgram}
+          dayDate={selectedDate}
+          dayIndex={selectedDayIndex}
+          requiresConfirmation={isPastCalendarDay(selectedDate)}
           onAssign={(d) => {
-            onUpdateDay(weekStart, assignIndex, d);
-            setAssignIndex(null);
+            onUpdateDay(selectedWeekStart, selectedDayIndex, d);
           }}
           onClose={() => {
-            setAssignIndex(null);
+            setSelectedDate(null);
           }}
           onCreateCircuit={() => {
-            setAssignIndex(null);
+            setSelectedDate(null);
             onCreateCircuit();
           }}
         />
