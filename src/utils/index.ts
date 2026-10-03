@@ -1,7 +1,5 @@
 export {
   ACTIVITY_CATEGORY_LABELS,
-  DEFAULT_ACTIVITY_COLORS,
-  FLOW_KIND_LABELS,
   activityMetaLabel,
   circuitDurationMin,
   circuitMuscleKey,
@@ -13,13 +11,15 @@ export {
   dayPrimaryLabel,
   daySummaryLabel,
   dayWithActivities,
+  DEFAULT_ACTIVITY_COLORS,
   firstTrainingCircuitId,
+  FLOW_KIND_LABELS,
   isSameDayProgram,
   restDay,
   trainingDay,
 } from './activity.util';
+export type { DatedDay, StreakAlert, StreakAlertLevel } from './stats.util';
 export {
-  MET_BY_CATEGORY,
   computeCaloriesBurned,
   computeCategoryRatioLast30Days,
   computeCategoryTotals,
@@ -31,5 +31,5 @@ export {
   computeStreakWeeks,
   flattenDatedDays,
   isValidStreakDay,
+  MET_BY_CATEGORY,
 } from './stats.util';
-export type { DatedDay, StreakAlert, StreakAlertLevel } from './stats.util';

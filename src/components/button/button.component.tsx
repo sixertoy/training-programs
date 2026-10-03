@@ -1,3 +1,4 @@
+import cn from 'classnames';
 import type { ComponentType, CSSProperties } from 'react';
 
 interface ButtonProps {
@@ -12,9 +13,7 @@ interface ButtonProps {
 export const Button = ({ className, disabled, icon: Icon, label, onClick, style }: ButtonProps) => {
   return (
     <button
-      className={['inline-flex items-center justify-center gap-2', className]
-        .filter(Boolean)
-        .join(' ')}
+      className={cn('inline-flex items-center justify-center gap-2', className)}
       disabled={disabled}
       style={style}
       type="button"

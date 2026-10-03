@@ -7,7 +7,7 @@ type NavTarget = Screen.HOME | Screen.WEEKLY | Screen.CIRCUITS | Screen.TABATA;
 
 interface BottomNavProps {
   accent: string;
-  screen: string;
+  screen: Screen;
   onNavigate: (s: NavTarget) => void;
 }
 

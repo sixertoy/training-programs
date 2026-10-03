@@ -1,4 +1,4 @@
-export function Stepper({
+export const Stepper = ({
   max,
   min = 0,
   onChange,
@@ -12,11 +12,21 @@ export function Stepper({
   step?: number;
   min?: number;
   max?: number;
-}) {
+}) => {
   const display =
     Number.isInteger(step) && Number.isInteger(value)
       ? String(value)
       : value.toFixed(step < 1 ? 1 : 0);
+
+  const handleDecrement = () => {
+    const next = Math.round((value - step) * 10) / 10;
+    onChange(Math.max(min, next));
+  };
+
+  const handleIncrement = () => {
+    const next = Math.round((value + step) * 10) / 10;
+    onChange(max === undefined ? next : Math.min(max, next));
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -24,10 +34,7 @@ export function Stepper({
         className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
         style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
         type="button"
-        onClick={() => {
-          const next = Math.round((value - step) * 10) / 10;
-          onChange(Math.max(min, next));
-        }}>
+        onClick={handleDecrement}>
         −
       </button>
       <span className="font-900 text-base text-center" style={{ minWidth: 52 }}>
@@ -40,12 +47,11 @@ export function Stepper({
         className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none font-900 transition-all active:scale-90"
         style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
         type="button"
-        onClick={() => {
-          const next = Math.round((value + step) * 10) / 10;
-          onChange(max === undefined ? next : Math.min(max, next));
-        }}>
+        onClick={handleIncrement}>
         +
       </button>
     </div>
   );
-}
+};
+
+Stepper.displayName = 'Stepper';
