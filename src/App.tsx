@@ -12,23 +12,12 @@ import {
   IconRotateCcw,
   IconUser,
 } from './assets/icons';
+import AccentColorPicker from './AccentColorPicker';
 import BottomNav from './BottomNav';
 import freeTabataDefaults from './config/tabata-free.json';
 import ProgrammePage from './ProgrammePage';
 import { Gender, Screen, TabataMode, TimerPhase } from './enums';
 
-enum CardColor {
-  ORANGE = '#FF6B35',
-  PURPLE = '#7B2D8B',
-  GREEN = '#1A936F',
-  CRIMSON = '#C62A47',
-  BLUE = '#2E86AB',
-  RED = '#E84855',
-  SLATE = '#3D405B',
-  AMBER = '#F18F01',
-}
-
-const CARD_COLORS: string[] = Object.values(CardColor);
 enum AccentColor {
   LIME = '#CBFF47',
   ORANGE = '#FF6B35',
@@ -44,8 +33,6 @@ enum AccentColor {
   SEAFOAM = '#88D8B0',
   BLUSH = '#FF9A9E',
 }
-
-const ACCENT_PALETTE: string[] = Object.values(AccentColor);
 function withAlpha(hex: string, opacity: number): string {
   const alpha = Math.round(opacity * 255)
     .toString(16)
@@ -130,7 +117,7 @@ function shiftAccentLightness(hex: string, amount = 0.28): string {
 /** Même famille que l’accent : décalage de teinte + luminosité (comme la préparation). */
 function shiftAccentHue(hex: string, hueDeg: number, lightnessAmount = 0.28): string {
   const { h, s, l } = hexToHsl(hex);
-  const nextH = (((h * 360 + hueDeg) % 360) + 360) % 360 / 360;
+  const nextH = ((((h * 360 + hueDeg) % 360) + 360) % 360) / 360;
   const nextL = clamp01(l > 0.5 ? l - lightnessAmount : l + lightnessAmount);
   return hslToHex(nextH, s, nextL);
 }
@@ -159,14 +146,14 @@ function getBmiCategory(bmi: number): string {
   return 'Obésité';
 }
 
-function getBmiColor(bmi: number): string {
+function getBmiColor(bmi: number, accentColor: string): string {
   if (bmi < 18.5) return '#4ECDC4';
-  if (bmi < 25) return '#cbff47';
+  if (bmi < 25) return accentColor;
   if (bmi < 30) return '#FFE66D';
   return '#FF6B6B';
 }
 
-function computeHealthStats(profile: HealthStatsInput): HealthStats {
+function computeHealthStats(profile: HealthStatsInput & { accentColor: string }): HealthStats {
   const heightM = profile.heightCm / 100;
   const bmi = profile.weightKg / (heightM * heightM);
   const bmr =
@@ -186,7 +173,7 @@ function computeHealthStats(profile: HealthStatsInput): HealthStats {
   return {
     bmi: Math.round(bmi * 10) / 10,
     bmiCategory: getBmiCategory(bmi),
-    bmiColor: getBmiColor(bmi),
+    bmiColor: getBmiColor(bmi, profile.accentColor),
     bmr,
     fcMax: 220 - profile.age,
     idealWeight,
@@ -311,7 +298,6 @@ interface Exercise {
   name: string;
   description: string;
   tags: string[];
-  color: string;
 }
 interface DayProgram {
   day: string;
@@ -427,46 +413,40 @@ const initialCircuits: Circuit[] = [
 
 const initialExercises: Exercise[] = [
   {
-    color: '#FF6B35',
-    description: 'Exercice full-body explosif enchaînant squat, pompe et saut vertical.',
+    description: 'Explosive full-body move chaining squat, push-up and vertical jump.',
     id: '1',
     name: 'Burpees',
-    tags: ['Cardio', 'Jambes', 'Poitrine'],
+    tags: ['cardio', 'legs', 'chest'],
   },
   {
-    color: '#7B2D8B',
-    description: 'Tirage vertical en suspension à la barre, travail du dos et biceps.',
+    description: 'Vertical pull from a bar; back and biceps.',
     id: '2',
-    name: 'Tractions',
-    tags: ['Dos', 'Bras'],
+    name: 'Pull-ups',
+    tags: ['back', 'arms'],
   },
   {
-    color: '#1A936F',
-    description: 'Descente en squat profond avec impulsion explosive vers le haut.',
+    description: 'Deep squat with an explosive jump upward.',
     id: '3',
-    name: 'Squat sauté',
-    tags: ['Jambes', 'Fessiers', 'Cardio'],
+    name: 'Jump squat',
+    tags: ['legs', 'glutes', 'cardio'],
   },
   {
-    color: '#C62A47',
-    description: 'Poussée verticale avec haltères ou barre depuis les épaules.',
+    description: 'Vertical press with dumbbells or barbell from the shoulders.',
     id: '4',
-    name: 'Développé militaire',
-    tags: ['Épaules', 'Bras'],
+    name: 'Military press',
+    tags: ['shoulders', 'arms'],
   },
   {
-    color: '#2E86AB',
-    description: 'Maintien du corps en position rigide, renforcement profond des abdos.',
+    description: 'Hold a rigid body position; deep core strengthening.',
     id: '5',
-    name: 'Gainage planche',
-    tags: ['Abdos'],
+    name: 'Plank',
+    tags: ['abs'],
   },
   {
-    color: '#F18F01',
-    description: 'Pas en avant avec descente du genou arrière, travail unilatéral.',
+    description: 'Forward step with rear knee drop; unilateral leg work.',
     id: '6',
-    name: 'Fentes marchées',
-    tags: ['Jambes', 'Fessiers'],
+    name: 'Walking lunges',
+    tags: ['legs', 'glutes'],
   },
 ];
 
@@ -609,6 +589,15 @@ const CIRCUIT_MUSCLES: Record<string, string[]> = {
   push_day: ['shoulders', 'chest', 'arms'],
 };
 
+function humanizeKey(key: string): string {
+  if (!key) return key;
+  return key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' ');
+}
+
+function exerciseColor(exercise: Exercise): string {
+  return TAG_COLORS[exercise.tags[0]] ?? '#888';
+}
+
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 const Tag = ({ label }: { label: string }) => (
@@ -619,7 +608,7 @@ const Tag = ({ label }: { label: string }) => (
       border: `1px solid ${TAG_COLORS[label]}50`,
       color: TAG_COLORS[label],
     }}>
-    {label}
+    {humanizeKey(label)}
   </span>
 );
 
@@ -878,7 +867,7 @@ function HomeScreen({
               <div key={part}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-800" style={{ color: count > 0 ? '#ccc' : '#444' }}>
-                    {part}
+                    {humanizeKey(part)}
                   </span>
                   <span
                     className="text-xs font-900"
@@ -1002,20 +991,23 @@ function CircuitsScreen({
 
                 {exs.length > 0 && (
                   <div className="flex gap-1.5 flex-wrap">
-                    {exs.map((e) => (
-                      <div
-                        key={e.id}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl"
-                        style={{ backgroundColor: withAlpha(e.color, 0.12) }}>
+                    {exs.map((e) => {
+                      const color = exerciseColor(e);
+                      return (
                         <div
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: e.color }}
-                        />
-                        <span className="text-xs font-800" style={{ color: e.color }}>
-                          {e.name}
-                        </span>
-                      </div>
-                    ))}
+                          key={e.id}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl"
+                          style={{ backgroundColor: withAlpha(color, 0.12) }}>
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="text-xs font-800" style={{ color }}>
+                            {e.name}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1043,7 +1035,7 @@ function CreateCircuitScreen({
   accent: string;
 }) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [color, setColor] = useState(initial?.color ?? CARD_COLORS[0]);
+  const [color, setColor] = useState(initial?.color ?? AccentColor.ORANGE);
   const [prepTime, setPrepTime] = useState(initial?.prepTime ?? 10);
   const [exerciseTime, setExerciseTime] = useState(initial?.exerciseTime ?? 45);
   const [restBetweenExercises, setRestBetweenExercises] = useState(
@@ -1177,22 +1169,7 @@ function CreateCircuitScreen({
               style={{ color: accent }}>
               Couleur
             </label>
-            <div className="flex gap-2.5">
-              {CARD_COLORS.map((c) => (
-                <button
-                  key={c}
-                  className="w-8 h-8 rounded-lg transition-all active:scale-90"
-                  style={{
-                    backgroundColor: c,
-                    border: color === c ? '2.5px solid #fff' : '2.5px solid transparent',
-                    transform: color === c ? 'scale(1.18)' : 'scale(1)',
-                  }}
-                  onClick={() => {
-                    setColor(c);
-                  }}
-                />
-              ))}
-            </div>
+            <AccentColorPicker value={color} onChange={setColor} />
           </div>
 
           {/* Timing */}
@@ -1243,14 +1220,16 @@ function CreateCircuitScreen({
             </label>
             {selectedExercises.length > 0 && (
               <div className="space-y-2 mb-3">
-                {selectedExercises.map((e, i) => (
+                {selectedExercises.map((e, i) => {
+                  const color = exerciseColor(e);
+                  return (
                   <div
                     key={e.id}
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5"
                     style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
-                      style={{ backgroundColor: withAlpha(e.color, 0.15), color: e.color }}>
+                      style={{ backgroundColor: withAlpha(color, 0.15), color }}>
                       {i + 1}
                     </div>
                     <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
@@ -1284,7 +1263,8 @@ function CreateCircuitScreen({
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <button
@@ -1344,13 +1324,14 @@ function CreateCircuitScreen({
             <div className="overflow-y-auto space-y-2">
               {exercises.map((e) => {
                 const selected = exerciseIds.includes(e.id);
+                const color = exerciseColor(e);
                 return (
                   <button
                     key={e.id}
                     className="w-full flex items-center gap-3 rounded-xl px-3 py-3 transition-all"
                     style={{
-                      backgroundColor: selected ? withAlpha(e.color, 0.1) : '#1a1a1a',
-                      border: `1px solid ${selected ? withAlpha(e.color, 0.4) : '#2a2a2a'}`,
+                      backgroundColor: selected ? withAlpha(color, 0.1) : '#1a1a1a',
+                      border: `1px solid ${selected ? withAlpha(color, 0.4) : '#2a2a2a'}`,
                     }}
                     onClick={() => {
                       setExerciseIds(
@@ -1359,7 +1340,7 @@ function CreateCircuitScreen({
                     }}>
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center font-900 shrink-0"
-                      style={{ backgroundColor: withAlpha(e.color, 0.15), color: e.color }}>
+                      style={{ backgroundColor: withAlpha(color, 0.15), color }}>
                       {e.name.charAt(0)}
                     </div>
                     <div className="flex-1 text-left min-w-0">
@@ -1370,7 +1351,7 @@ function CreateCircuitScreen({
                             key={t}
                             className="text-xs font-700"
                             style={{ color: TAG_COLORS[t] }}>
-                            {t}
+                            {humanizeKey(t)}
                           </span>
                         ))}
                       </div>
@@ -1378,7 +1359,7 @@ function CreateCircuitScreen({
                     {selected && (
                       <span
                         className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: e.color }}>
+                        style={{ backgroundColor: color }}>
                         <svg
                           fill="none"
                           height="10"
@@ -1533,9 +1514,7 @@ function TabataScreen({
 
   const exerciseNames =
     localCircuit.exerciseIds.length > 0
-      ? localCircuit.exerciseIds.map(
-          (id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice',
-        )
+      ? localCircuit.exerciseIds.map((id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice')
       : ['Exercice'];
 
   const [cycle, setCycle] = useState(1);
@@ -1550,7 +1529,10 @@ function TabataScreen({
 
   const exerciseIndex = getExerciseIndex(round, exerciseNames.length);
   const phaseMax = phaseDuration(phase, durations);
-  const isRestPhase = phase === TimerPhase.REST || phase === TimerPhase.INTER_CYCLE_REST || phase === TimerPhase.RECOVERY;
+  const isRestPhase =
+    phase === TimerPhase.REST ||
+    phase === TimerPhase.INTER_CYCLE_REST ||
+    phase === TimerPhase.RECOVERY;
   const phaseColor =
     phase === TimerPhase.WORK
       ? accent
@@ -1704,10 +1686,17 @@ function TabataScreen({
             : 'Exercice actuel';
 
   const infoMain =
-    phase === TimerPhase.PREP ? 'Préparez-vous' : isRestPhase ? 'Repos' : exerciseNames[exerciseIndex];
+    phase === TimerPhase.PREP
+      ? 'Préparez-vous'
+      : isRestPhase
+        ? 'Repos'
+        : exerciseNames[exerciseIndex];
 
   const showNext =
-    (phase === TimerPhase.PREP || phase === TimerPhase.WORK || phase === TimerPhase.REST || phase === TimerPhase.INTER_CYCLE_REST) &&
+    (phase === TimerPhase.PREP ||
+      phase === TimerPhase.WORK ||
+      phase === TimerPhase.REST ||
+      phase === TimerPhase.INTER_CYCLE_REST) &&
     exerciseNames.length > 0;
 
   const timingRows: {
@@ -1776,8 +1765,8 @@ function TabataScreen({
           </div>
 
           <p className="text-xs font-600 leading-relaxed" style={{ color: '#666' }}>
-            Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le
-            repos entre cycles (ou la récupération finale pour le dernier cycle).
+            Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le repos
+            entre cycles (ou la récupération finale pour le dernier cycle).
           </p>
 
           <p className="text-xs font-700 text-right" style={{ color: '#555' }}>
@@ -1796,30 +1785,33 @@ function TabataScreen({
               </p>
             ) : (
               <div className="space-y-2">
-                {draftExercises.map((e, i) => (
-                  <div
-                    key={e.id}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                    style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                {draftExercises.map((e, i) => {
+                  const color = exerciseColor(e);
+                  return (
                     <div
-                      className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
-                      style={{ backgroundColor: withAlpha(e.color, 0.15), color: e.color }}>
-                      {i + 1}
+                      key={e.id}
+                      className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                      style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center font-900 text-sm shrink-0"
+                        style={{ backgroundColor: withAlpha(color, 0.15), color }}>
+                        {i + 1}
+                      </div>
+                      <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
+                      <button
+                        className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
+                        style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
+                        onClick={() => {
+                          setDraft((d) => ({
+                            ...d,
+                            exerciseIds: d.exerciseIds.filter((id) => id !== e.id),
+                          }));
+                        }}>
+                        ×
+                      </button>
                     </div>
-                    <p className="font-800 text-sm flex-1 min-w-0 truncate">{e.name}</p>
-                    <button
-                      className="w-7 h-7 rounded-lg flex items-center justify-center font-900 leading-none"
-                      style={{ backgroundColor: '#2a2a2a', color: '#FF6B6B' }}
-                      onClick={() => {
-                        setDraft((d) => ({
-                          ...d,
-                          exerciseIds: d.exerciseIds.filter((id) => id !== e.id),
-                        }));
-                      }}>
-                      ×
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
             <button
@@ -1898,10 +1890,12 @@ function TabataScreen({
                     }}>
                     <div
                       className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: e.color }}
+                      style={{ backgroundColor: exerciseColor(e) }}
                     />
                     <span className="font-800 text-sm flex-1">{e.name}</span>
-                    <span className="text-xs font-900" style={{ color: selected ? accent : '#444' }}>
+                    <span
+                      className="text-xs font-900"
+                      style={{ color: selected ? accent : '#444' }}>
                       {selected ? '✓' : '+'}
                     </span>
                   </button>
@@ -2148,7 +2142,6 @@ function TabataScreen({
   );
 }
 
-
 // ─── Profile Screen ───────────────────────────────────────────────────────────
 
 function ProfileScreen({
@@ -2388,22 +2381,12 @@ function ProfileScreen({
             style={{ color: draft.accentColor }}>
             Couleur d'accent
           </label>
-          <div className="flex gap-3 flex-wrap">
-            {ACCENT_PALETTE.map((c) => (
-              <button
-                key={c}
-                className="w-10 h-10 rounded-xl transition-all active:scale-90"
-                style={{
-                  backgroundColor: c,
-                  border: draft.accentColor === c ? '3px solid #fff' : '3px solid transparent',
-                  transform: draft.accentColor === c ? 'scale(1.15)' : 'scale(1)',
-                }}
-                onClick={() => {
-                  update('accentColor', c);
-                }}
-              />
-            ))}
-          </div>
+          <AccentColorPicker
+            value={draft.accentColor}
+            onChange={(c) => {
+              update('accentColor', c);
+            }}
+          />
         </div>
 
         <button
