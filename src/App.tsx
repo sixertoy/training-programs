@@ -14,7 +14,7 @@ import { SEED_CIRCUIT_IDS, SEED_EXERCISE_IDS } from './data/seed-ids';
 import { WEEK_HISTORY } from './data/week-history';
 import { Gender, Screen, TabataMode, ViewMode } from './enums';
 import type { DayProgram } from './interfaces';
-import { firstTrainingCircuitId } from './utils';
+import { firstTrainingActivity } from './utils';
 
 interface UserProfile {
   firstName: string;
@@ -219,8 +219,9 @@ export const App = () => {
   });
   const [profile, setProfile] = useState<UserProfile>(defaultProfile);
   const [editingCircuitId, setEditingCircuitId] = useState<string | null>(null);
-  const [sessionCircuit, setSessionCircuit] = useState<Circuit | undefined>();
-  const [tabataMode, setTabataMode] = useState<TabataMode>(TabataMode.FREE);
+  const [session, setSession] = useState<
+    { circuit: Circuit; tabataMode: TabataMode } | undefined
+  >();
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', profile.accentColor);
@@ -235,15 +236,16 @@ export const App = () => {
   };
 
   const openFreeTabata = () => {
-    setTabataMode(TabataMode.FREE);
-    setSessionCircuit(createFreeTabataCircuit(profile.accentColor));
+    setSession({
+      circuit: createFreeTabataCircuit(profile.accentColor),
+      tabataMode: TabataMode.FREE,
+    });
     navigate(Screen.TABATA);
   };
 
-  const startSession = (circuit?: Circuit) => {
+  const startSession = (circuit: Circuit | undefined, tabataMode: TabataMode) => {
     if (!circuit) return;
-    setTabataMode(TabataMode.PLANNED);
-    setSessionCircuit(circuit);
+    setSession({ circuit, tabataMode });
     navigate(Screen.TABATA);
   };
 
@@ -273,8 +275,10 @@ export const App = () => {
   const currentWeekDays = resolveWeekDays(getWeekStart(0), weekPrograms);
   const todayIndex = getTodayIndex();
 
-  const todayCircuitId = firstTrainingCircuitId(currentWeekDays[todayIndex]);
-  const todayCircuit = todayCircuitId ? circuits.find((c) => c.id === todayCircuitId) : undefined;
+  const todayTraining = firstTrainingActivity(currentWeekDays[todayIndex]);
+  const todayCircuit = todayTraining?.meta.circuitId
+    ? circuits.find((c) => c.id === todayTraining.meta.circuitId)
+    : undefined;
 
   const editingCircuit = editingCircuitId
     ? circuits.find((c) => c.id === editingCircuitId)
@@ -283,7 +287,7 @@ export const App = () => {
   const noNav =
     screen === Screen.CREATE_CIRCUIT ||
     screen === Screen.PROFILE ||
-    (screen === Screen.TABATA && tabataMode === TabataMode.PLANNED);
+    (screen === Screen.TABATA && session?.tabataMode === TabataMode.PLANNED);
 
   return (
     <div
@@ -310,7 +314,8 @@ export const App = () => {
                 navigate(Screen.PROFILE);
               }}
               onGoToTimer={() => {
-                startSession(todayCircuit);
+                if (!todayTraining) return;
+                startSession(todayCircuit, todayTraining.meta.tabataMode);
               }}
               onGoToWeekly={() => {
                 navigate(Screen.WEEKLY);
@@ -326,8 +331,11 @@ export const App = () => {
               onCreateCircuit={() => {
                 goToCreateCircuit();
               }}
-              onStartSession={(circuitId) => {
-                startSession(circuits.find((c) => c.id === circuitId));
+              onStartSession={({ circuitId, tabataMode }) => {
+                startSession(
+                  circuits.find((c) => c.id === circuitId),
+                  tabataMode,
+                );
               }}
               onUpdateDay={handleUpdateDay}
             />
@@ -354,13 +362,13 @@ export const App = () => {
               onSave={handleSaveCircuit}
             />
           )}
-          {screen === Screen.TABATA && sessionCircuit && (
+          {screen === Screen.TABATA && session && (
             <TabataPage
-              key={sessionCircuit.id}
+              key={session.circuit.id}
               accent={accent}
-              circuit={sessionCircuit}
+              circuit={session.circuit}
               exercises={exercises}
-              mode={tabataMode}
+              tabataMode={session.tabataMode}
               onClose={handleBack}
             />
           )}

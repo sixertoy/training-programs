@@ -259,16 +259,16 @@ export function TabataPage({
   accent,
   circuit: circuitProp,
   exercises,
-  mode,
   onClose,
+  tabataMode,
 }: {
   onClose: () => void;
   circuit: Circuit;
   exercises: Exercise[];
   accent: string;
-  mode: TabataMode;
+  tabataMode: TabataMode;
 }) {
-  const isFree = mode === TabataMode.FREE;
+  const isFree = tabataMode === TabataMode.FREE;
   const [localCircuit, setLocalCircuit] = useState<Circuit>(circuitProp);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -901,10 +901,11 @@ export function TabataPage({
         </div>
       </div>
 
-      <div className={cn('px-5 flex items-center justify-center', {
-        'pb-10': !isFree,
-        'pb-4': isFree,
-      })}>
+      <div
+        className={cn('px-5 flex items-center justify-center', {
+          'pb-10': !isFree,
+          'pb-4': isFree,
+        })}>
         <button
           aria-label={isRunning ? 'Pause' : 'Lecture'}
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-95"

@@ -1,5 +1,5 @@
-import { ActivityCategory, FlowKind, TrainingKind } from '../enums';
-import type { DayActivity, DayProgram } from '../interfaces';
+import { ActivityCategory, FlowKind, TabataMode } from '../enums';
+import type { DayActivity, DayProgram, TrainingMeta } from '../interfaces';
 
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
   [ActivityCategory.FLOW]: 'Flow',
@@ -33,6 +33,8 @@ interface CircuitLike {
   recoveryTime: number;
 }
 
+type TrainingActivity = Extract<DayActivity, { category: ActivityCategory.TRAINING }>;
+
 export function circuitDurationMin(circuit: CircuitLike): number {
   const restAfterExercises = Math.max(0, circuit.rounds - 1) * circuit.restBetweenExercises;
   const workPerCycle = circuit.rounds * circuit.exerciseTime + restAfterExercises;
@@ -48,16 +50,18 @@ export function circuitDurationMin(circuit: CircuitLike): number {
 
 export function createTrainingActivity(
   circuit: CircuitLike,
-  trainingKind: TrainingKind = TrainingKind.CIRCUIT,
-): DayActivity {
+  tabataMode: TabataMode = TabataMode.PLANNED,
+): TrainingActivity {
   return {
     category: ActivityCategory.TRAINING,
-    circuitId: circuit.id,
     color: circuit.color,
-    exercises: circuit.exerciseIds.length,
     id: `training-${circuit.id}-${Date.now()}`,
+    meta: {
+      circuitId: circuit.id,
+      exercises: circuit.exerciseIds.length,
+      tabataMode,
+    },
     name: circuit.name,
-    trainingKind,
   };
 }
 
@@ -71,10 +75,12 @@ export function createRunningActivity(input: {
   return {
     category: ActivityCategory.RUNNING,
     color: input.color ?? DEFAULT_ACTIVITY_COLORS[ActivityCategory.RUNNING],
-    distanceKm: input.distanceKm,
-    durationMin: input.durationMin,
     id: `running-${Date.now()}`,
-    isInterval: input.isInterval,
+    meta: {
+      distanceKm: input.distanceKm,
+      durationMin: input.durationMin,
+      isInterval: input.isInterval,
+    },
     name: input.name,
   };
 }
@@ -88,9 +94,11 @@ export function createFlowActivity(input: {
   return {
     category: ActivityCategory.FLOW,
     color: input.color ?? DEFAULT_ACTIVITY_COLORS[ActivityCategory.FLOW],
-    durationMin: input.durationMin,
-    flowKind: input.flowKind,
     id: `flow-${Date.now()}`,
+    meta: {
+      durationMin: input.durationMin,
+      flowKind: input.flowKind,
+    },
     name: input.name,
   };
 }
@@ -102,15 +110,25 @@ export function restDay(day: string, short: string): DayProgram {
 export function trainingDay(
   day: string,
   short: string,
-  activity: Omit<DayActivity, 'category' | 'id'> & { id?: string },
+  activity: {
+    id?: string;
+    name: string;
+    color: string;
+    meta?: Partial<TrainingMeta>;
+  },
 ): DayProgram {
   return {
     activities: [
       {
-        ...activity,
         category: ActivityCategory.TRAINING,
+        color: activity.color,
         id: activity.id ?? `training-${short}-${activity.name}`,
-        trainingKind: activity.trainingKind ?? TrainingKind.CIRCUIT,
+        meta: {
+          circuitId: activity.meta?.circuitId,
+          exercises: activity.meta?.exercises,
+          tabataMode: activity.meta?.tabataMode ?? TabataMode.PLANNED,
+        },
+        name: activity.name,
       },
     ],
     day,
@@ -133,16 +151,22 @@ export function dayWithActivities(
 }
 
 export function dayExerciseCount(day: DayProgram): number {
-  return day.activities.reduce((sum, activity) => sum + (activity.exercises ?? 0), 0);
+  return day.activities.reduce((sum, activity) => {
+    if (activity.category !== ActivityCategory.TRAINING) return sum;
+    return sum + (activity.meta.exercises ?? 0);
+  }, 0);
 }
 
 export function dayDurationMin(day: DayProgram, circuits: CircuitLike[]): number {
   return day.activities.reduce((sum, activity) => {
-    if (activity.category === ActivityCategory.TRAINING && activity.circuitId) {
-      const circuit = circuits.find((c) => c.id === activity.circuitId);
-      return sum + (circuit ? circuitDurationMin(circuit) : (activity.durationMin ?? 0));
+    if (activity.category === ActivityCategory.TRAINING) {
+      if (activity.meta.circuitId) {
+        const circuit = circuits.find((c) => c.id === activity.meta.circuitId);
+        return sum + (circuit ? circuitDurationMin(circuit) : 0);
+      }
+      return sum;
     }
-    return sum + (activity.durationMin ?? 0);
+    return sum + (activity.meta.durationMin ?? 0);
   }, 0);
 }
 
@@ -157,47 +181,54 @@ export function daySummaryLabel(day: DayProgram): string {
   if (day.activities.length === 1) {
     const activity = day.activities[0];
     if (activity.category === ActivityCategory.TRAINING) {
-      return `${activity.exercises ?? 0} exercices`;
+      return `${activity.meta.exercises ?? 0} exercices`;
     }
     if (activity.category === ActivityCategory.RUNNING) {
       const parts: string[] = [];
-      if (activity.distanceKm !== undefined) parts.push(`${activity.distanceKm} km`);
-      if (activity.durationMin !== undefined) parts.push(`${activity.durationMin} min`);
-      if (activity.isInterval) parts.push('Fractionné');
+      if (activity.meta.distanceKm !== undefined) parts.push(`${activity.meta.distanceKm} km`);
+      if (activity.meta.durationMin !== undefined) parts.push(`${activity.meta.durationMin} min`);
+      if (activity.meta.isInterval) parts.push('Fractionné');
       return parts.join(' · ') || 'Running';
     }
-    const kind = activity.flowKind ? FLOW_KIND_LABELS[activity.flowKind] : 'Flow';
-    return activity.durationMin !== undefined ? `${kind} · ${activity.durationMin} min` : kind;
+    const kind = FLOW_KIND_LABELS[activity.meta.flowKind];
+    return activity.meta.durationMin !== undefined
+      ? `${kind} · ${activity.meta.durationMin} min`
+      : kind;
   }
   return `${day.activities.length} activités`;
 }
 
-export function firstTrainingCircuitId(day: DayProgram): string | undefined {
+export function firstTrainingActivity(day: DayProgram): TrainingActivity | undefined {
   return day.activities.find(
-    (activity) =>
-      activity.category === ActivityCategory.TRAINING && activity.circuitId !== undefined,
-  )?.circuitId;
+    (activity): activity is TrainingActivity => activity.category === ActivityCategory.TRAINING,
+  );
+}
+
+export function firstTrainingCircuitId(day: DayProgram): string | undefined {
+  return firstTrainingActivity(day)?.meta.circuitId;
 }
 
 export function activityMetaLabel(activity: DayActivity, circuits: CircuitLike[]): string {
   if (activity.category === ActivityCategory.TRAINING) {
-    const circuit = activity.circuitId
-      ? circuits.find((c) => c.id === activity.circuitId)
+    const circuit = activity.meta.circuitId
+      ? circuits.find((c) => c.id === activity.meta.circuitId)
       : undefined;
     if (circuit) {
       return `${circuit.exerciseIds.length} exo · ${circuit.rounds} rounds · ${circuit.cycles} cycles · ~${circuitDurationMin(circuit)} min`;
     }
-    return `${activity.exercises ?? 0} exercices`;
+    return `${activity.meta.exercises ?? 0} exercices`;
   }
   if (activity.category === ActivityCategory.RUNNING) {
     const parts: string[] = [];
-    if (activity.distanceKm !== undefined) parts.push(`${activity.distanceKm} km`);
-    if (activity.durationMin !== undefined) parts.push(`${activity.durationMin} min`);
-    if (activity.isInterval) parts.push('Fractionné');
+    if (activity.meta.distanceKm !== undefined) parts.push(`${activity.meta.distanceKm} km`);
+    if (activity.meta.durationMin !== undefined) parts.push(`${activity.meta.durationMin} min`);
+    if (activity.meta.isInterval) parts.push('Fractionné');
     return parts.join(' · ') || 'Course';
   }
-  const kind = activity.flowKind ? FLOW_KIND_LABELS[activity.flowKind] : 'Flow';
-  return activity.durationMin !== undefined ? `${kind} · ${activity.durationMin} min` : kind;
+  const kind = FLOW_KIND_LABELS[activity.meta.flowKind];
+  return activity.meta.durationMin !== undefined
+    ? `${kind} · ${activity.meta.durationMin} min`
+    : kind;
 }
 
 export function isSameDayProgram(a: DayProgram, b: DayProgram): boolean {
@@ -206,15 +237,33 @@ export function isSameDayProgram(a: DayProgram, b: DayProgram): boolean {
   if (a.activities.length !== b.activities.length) return false;
   return a.activities.every((activity, index) => {
     const other = b.activities[index];
-    return (
-      activity.category === other.category &&
-      activity.name === other.name &&
-      activity.circuitId === other.circuitId &&
-      activity.flowKind === other.flowKind &&
-      activity.isInterval === other.isInterval &&
-      activity.distanceKm === other.distanceKm &&
-      activity.durationMin === other.durationMin
-    );
+    if (activity.category !== other.category || activity.name !== other.name) return false;
+    if (
+      activity.category === ActivityCategory.TRAINING &&
+      other.category === ActivityCategory.TRAINING
+    ) {
+      return (
+        activity.meta.circuitId === other.meta.circuitId &&
+        activity.meta.tabataMode === other.meta.tabataMode
+      );
+    }
+    if (
+      activity.category === ActivityCategory.RUNNING &&
+      other.category === ActivityCategory.RUNNING
+    ) {
+      return (
+        activity.meta.isInterval === other.meta.isInterval &&
+        activity.meta.distanceKm === other.meta.distanceKm &&
+        activity.meta.durationMin === other.meta.durationMin
+      );
+    }
+    if (activity.category === ActivityCategory.FLOW && other.category === ActivityCategory.FLOW) {
+      return (
+        activity.meta.flowKind === other.meta.flowKind &&
+        activity.meta.durationMin === other.meta.durationMin
+      );
+    }
+    return false;
   });
 }
 

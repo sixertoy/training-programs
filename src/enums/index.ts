@@ -5,6 +5,5 @@ export {
   Screen,
   TabataMode,
   TimerPhase,
-  TrainingKind,
   ViewMode,
 } from './comparison.enum';

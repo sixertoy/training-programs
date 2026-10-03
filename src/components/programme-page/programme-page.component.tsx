@@ -31,6 +31,7 @@ import {
   IconWeek,
 } from '../../assets/icons';
 import { WEEK_HISTORY } from '../../data/week-history';
+import type { TabataMode } from '../../enums';
 import { ActivityCategory, FlowKind, ViewMode } from '../../enums';
 import type { DayActivity, DayProgram } from '../../interfaces';
 import {
@@ -45,7 +46,7 @@ import {
   dayPrimaryLabel,
   daySummaryLabel,
   DEFAULT_ACTIVITY_COLORS,
-  firstTrainingCircuitId,
+  firstTrainingActivity,
   FLOW_KIND_LABELS,
   isSameDayProgram,
 } from '../../utils';
@@ -768,7 +769,7 @@ export function ProgrammePage({
   weekPrograms: Record<string, DayProgram[]>;
   onUpdateDay: (weekStart: Date, dayIndex: number, day: DayProgram) => void;
   onCreateCircuit: () => void;
-  onStartSession: (circuitId: string) => void;
+  onStartSession: (payload: { circuitId: string; tabataMode: TabataMode }) => void;
   accent: string;
   defaultViewMode?: ViewMode;
 }) {
@@ -795,7 +796,8 @@ export function ProgrammePage({
   const headerDateTitle = format(today, 'd MMMM yyyy', { locale: fr });
   const todayIndex = getTodayIndex(today);
   const todayProgram = resolveWeekDays(getWeekStart(0), weekPrograms)[todayIndex];
-  const todayCircuitId = firstTrainingCircuitId(todayProgram);
+  const todayTraining = firstTrainingActivity(todayProgram);
+  const todayCircuitId = todayTraining?.meta.circuitId;
   const canStartToday = !todayProgram.isRest && todayCircuitId !== undefined;
 
   const selectedWeekStart = selectedDate ? startOfWeek(selectedDate, WEEK_START_OPTIONS) : null;
@@ -874,7 +876,7 @@ export function ProgrammePage({
           </div>
         </div>
 
-        {canStartToday && todayCircuitId ? (
+        {canStartToday && todayTraining && todayCircuitId ? (
           <div
             className="mx-5 mb-4 rounded-2xl overflow-hidden"
             style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}bb 100%)` }}>
@@ -897,7 +899,10 @@ export function ProgrammePage({
                 className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
                 style={{ backgroundColor: '#0d0d0d' }}
                 onClick={() => {
-                  onStartSession(todayCircuitId);
+                  onStartSession({
+                    circuitId: todayCircuitId,
+                    tabataMode: todayTraining.meta.tabataMode,
+                  });
                 }}>
                 <span style={{ color: accent, marginLeft: 3 }}>
                   <IconPlay />

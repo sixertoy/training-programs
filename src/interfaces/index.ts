@@ -1,1 +1,7 @@
-export type { DayActivity, DayProgram } from './day-activity.interface';
+export type {
+  DayActivity,
+  DayProgram,
+  FlowMeta,
+  RunningMeta,
+  TrainingMeta,
+} from './day-activity.interface';

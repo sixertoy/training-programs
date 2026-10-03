@@ -143,7 +143,7 @@ function getNextSession(days: DayProgram[], todayIndex: number): NextSession | n
   const primary = training ?? day.activities[0];
   return {
     circuit: primary.name,
-    circuitId: primary.circuitId,
+    circuitId: training?.meta.circuitId,
     day: DAY_SHORTS[nextIndex] ?? '',
     exercises: dayExerciseCount(day),
   };

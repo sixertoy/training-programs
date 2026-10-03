@@ -272,11 +272,14 @@ export function computePersonalBestMonth(datedDays: DatedDay[], circuits: Circui
 }
 
 function activityDurationMin(activity: DayActivity, circuits: CircuitLike[]): number {
-  if (activity.category === ActivityCategory.TRAINING && activity.circuitId) {
-    const circuit = circuits.find((c) => c.id === activity.circuitId);
-    if (circuit) return circuitDurationMin(circuit);
+  if (activity.category === ActivityCategory.TRAINING) {
+    if (activity.meta.circuitId) {
+      const circuit = circuits.find((c) => c.id === activity.meta.circuitId);
+      if (circuit) return circuitDurationMin(circuit);
+    }
+    return 0;
   }
-  return activity.durationMin ?? 0;
+  return activity.meta.durationMin ?? 0;
 }
 
 export function computeCaloriesBurned(

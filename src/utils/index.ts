@@ -12,6 +12,7 @@ export {
   daySummaryLabel,
   dayWithActivities,
   DEFAULT_ACTIVITY_COLORS,
+  firstTrainingActivity,
   firstTrainingCircuitId,
   FLOW_KIND_LABELS,
   isSameDayProgram,

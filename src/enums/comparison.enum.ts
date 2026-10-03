@@ -31,11 +31,6 @@ export enum ActivityCategory {
   FLOW = 'FLOW',
 }
 
-export enum TrainingKind {
-  CIRCUIT = 'CIRCUIT',
-  TABATA = 'TABATA',
-}
-
 export enum FlowKind {
   YOGA = 'YOGA',
   STRETCHING = 'STRETCHING',
