@@ -10,6 +10,7 @@ import home from './home.svg?raw';
 import pause from './pause.svg?raw';
 import play from './play.svg?raw';
 import plus from './plus.svg?raw';
+import rotateCcw from './rotate-ccw.svg?raw';
 import skip from './skip.svg?raw';
 import week from './week.svg?raw';
 
@@ -29,5 +30,6 @@ export const IconHome = () => <SvgIcon svg={home} />;
 export const IconPause = () => <SvgIcon svg={pause} />;
 export const IconPlay = () => <SvgIcon svg={play} />;
 export const IconPlus = () => <SvgIcon svg={plus} />;
+export const IconRotateCcw = () => <SvgIcon svg={rotateCcw} />;
 export const IconSkip = () => <SvgIcon svg={skip} />;
 export const IconWeek = () => <SvgIcon svg={week} />;
