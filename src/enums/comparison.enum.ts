@@ -25,6 +25,23 @@ export enum ViewMode {
   MONTH = 'MONTH',
 }
 
+export enum ActivityCategory {
+  TRAINING = 'TRAINING',
+  RUNNING = 'RUNNING',
+  FLOW = 'FLOW',
+}
+
+export enum TrainingKind {
+  CIRCUIT = 'CIRCUIT',
+  TABATA = 'TABATA',
+}
+
+export enum FlowKind {
+  YOGA = 'YOGA',
+  STRETCHING = 'STRETCHING',
+  STRENGTHENING = 'STRENGTHENING',
+}
+
 export enum Gender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',

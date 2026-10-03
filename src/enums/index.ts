@@ -1,1 +1,10 @@
-export { Gender, Screen, TabataMode, TimerPhase, ViewMode } from './comparison.enum';
+export {
+  ActivityCategory,
+  FlowKind,
+  Gender,
+  Screen,
+  TabataMode,
+  TimerPhase,
+  TrainingKind,
+  ViewMode,
+} from './comparison.enum';
