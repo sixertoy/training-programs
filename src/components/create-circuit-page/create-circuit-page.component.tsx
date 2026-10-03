@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { IconBack, IconPlus } from '../../assets/icons';
+import { t } from '../../i18n';
 import { AccentColorPicker } from '../accent-color-picker';
 import { Button } from '../button';
 import { Stepper } from '../stepper';
@@ -164,32 +165,59 @@ export function CreateCircuitPage({
   };
 
   const timingRows = [
-    { label: 'Préparation', onChange: setPrepTime, step: 5, unit: 'sec', value: prepTime },
     {
-      label: "Temps d'exercice",
+      id: 'prepTime',
+      label: t('tabata.config.timing.prep'),
+      onChange: setPrepTime,
+      step: 5,
+      unit: 'sec',
+      value: prepTime,
+    },
+    {
+      id: 'exerciseTime',
+      label: t('tabata.config.timing.exercise'),
       onChange: setExerciseTime,
       step: 5,
       unit: 'sec',
       value: exerciseTime,
     },
     {
-      label: 'Repos entre exercices',
+      id: 'restBetweenExercises',
+      label: t('tabata.config.timing.restBetweenExercises'),
       onChange: setRestBetweenExercises,
       step: 5,
       unit: 'sec',
       value: restBetweenExercises,
     },
-    { label: 'Rounds / cycle', min: 1, onChange: setRounds, step: 1, unit: '×', value: rounds },
-    { label: 'Nombre de cycles', min: 1, onChange: setCycles, step: 1, unit: '×', value: cycles },
     {
-      label: 'Repos entre cycles',
+      id: 'rounds',
+      label: t('tabata.config.timing.roundsPerCycle'),
+      min: 1,
+      onChange: setRounds,
+      step: 1,
+      unit: '×',
+      value: rounds,
+    },
+    {
+      id: 'cycles',
+      label: t('tabata.config.timing.cyclesCount'),
+      min: 1,
+      onChange: setCycles,
+      step: 1,
+      unit: '×',
+      value: cycles,
+    },
+    {
+      id: 'restBetweenCycles',
+      label: t('tabata.config.timing.restBetweenCycles'),
       onChange: setRestBetweenCycles,
       step: 15,
       unit: 'sec',
       value: restBetweenCycles,
     },
     {
-      label: 'Récupération finale',
+      id: 'recoveryTime',
+      label: t('tabata.config.timing.finalRecovery'),
       onChange: setRecoveryTime,
       step: 15,
       unit: 'sec',
@@ -197,9 +225,9 @@ export function CreateCircuitPage({
     },
   ];
 
-  let saveLabel = 'Créer le circuit';
-  if (saved) saveLabel = '✓ Circuit enregistré !';
-  else if (initial) saveLabel = 'Enregistrer les modifications';
+  let saveLabel = t('createCircuit.save.create');
+  if (saved) saveLabel = t('createCircuit.save.saved');
+  else if (initial) saveLabel = t('createCircuit.save.edit');
   let saveBg = '#2a2a2a';
   if (saved) saveBg = '#8bcf00';
   else if (name.trim()) saveBg = accent;
@@ -215,7 +243,7 @@ export function CreateCircuitPage({
             <IconBack />
           </button>
           <h1 className="text-2xl font-900">
-            {initial ? 'Éditer le circuit' : 'Créer un Circuit'}
+            {initial ? t('createCircuit.title.edit') : t('createCircuit.title.create')}
           </h1>
         </div>
 
@@ -225,11 +253,11 @@ export function CreateCircuitPage({
             <label
               className="block text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: accent }}>
-              Nom du circuit
+              {t('createCircuit.field.name')}
             </label>
             <input
               className="w-full rounded-xl px-4 py-3.5 font-700 text-base outline-none"
-              placeholder="Ex: Force Upper Body"
+              placeholder={t('createCircuit.field.namePlaceholder')}
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f5f5f5' }}
               type="text"
               value={name}
@@ -250,7 +278,7 @@ export function CreateCircuitPage({
             <label
               className="block text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: accent }}>
-              Couleur
+              {t('createCircuit.field.color')}
             </label>
             <AccentColorPicker value={color} onChange={setColor} />
           </div>
@@ -260,14 +288,14 @@ export function CreateCircuitPage({
             <label
               className="block text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: accent }}>
-              Paramètres de timing
+              {t('createCircuit.field.timing')}
             </label>
             <div
               className="rounded-2xl overflow-hidden"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
               {timingRows.map((row, idx) => (
                 <div
-                  key={row.label}
+                  key={row.id}
                   className="flex items-center justify-between px-4 py-3"
                   style={{
                     borderBottom: idx < timingRows.length - 1 ? '1px solid #2a2a2a' : 'none',
@@ -286,11 +314,10 @@ export function CreateCircuitPage({
               ))}
             </div>
             <p className="text-xs font-600 mt-2.5 leading-relaxed" style={{ color: '#666' }}>
-              Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le
-              repos entre cycles (ou la récupération finale pour le dernier cycle).
+              {t('createCircuit.restHint')}
             </p>
             <p className="text-xs font-700 mt-2 text-right" style={{ color: '#555' }}>
-              Durée estimée : ~{durationMin} min
+              {t('createCircuit.estimatedDuration', { minutes: durationMin })}
             </p>
           </div>
 
@@ -299,7 +326,7 @@ export function CreateCircuitPage({
             <label
               className="block text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: accent }}>
-              Exercices ({exerciseIds.length})
+              {t('createCircuit.field.exercises', { count: exerciseIds.length })}
             </label>
             {selectedExercises.length > 0 && (
               <div className="space-y-2 mb-3">
@@ -353,7 +380,7 @@ export function CreateCircuitPage({
             <Button
               className="w-full rounded-xl py-3 font-800 text-sm transition-all active:scale-95"
               icon={IconPlus}
-              label="Ajouter des exercices"
+              label={t('createCircuit.addExercises')}
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -392,7 +419,7 @@ export function CreateCircuitPage({
             className="rounded-t-3xl px-5 pt-5 pb-6 flex flex-col"
             style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '72%' }}>
             <div className="flex items-center justify-between mb-4 shrink-0">
-              <p className="font-900 text-lg">Choisir des exercices</p>
+              <p className="font-900 text-lg">{t('createCircuit.picker.title')}</p>
               <button
                 className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none"
                 style={{ backgroundColor: '#2a2a2a', color: '#888' }}
@@ -427,12 +454,12 @@ export function CreateCircuitPage({
                     <div className="flex-1 text-left min-w-0">
                       <p className="font-800 text-sm">{e.name}</p>
                       <div className="flex gap-2 mt-0.5 flex-wrap">
-                        {e.tags.map((t) => (
+                        {e.tags.map((tag) => (
                           <span
-                            key={t}
+                            key={tag}
                             className="text-xs font-700"
-                            style={{ color: TAG_COLORS[t] }}>
-                            {humanizeKey(t)}
+                            style={{ color: TAG_COLORS[tag] }}>
+                            {humanizeKey(tag)}
                           </span>
                         ))}
                       </div>
@@ -460,7 +487,7 @@ export function CreateCircuitPage({
             </div>
             <Button
               className="mt-4 w-full rounded-2xl py-3.5 font-900 shrink-0"
-              label={`Confirmer (${exerciseIds.length} exercice${exerciseIds.length !== 1 ? 's' : ''})`}
+              label={t('createCircuit.confirmExercises', { count: exerciseIds.length })}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 setShowPicker(false);

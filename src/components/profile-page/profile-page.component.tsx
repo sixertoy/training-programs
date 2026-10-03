@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { IconBack } from '../../assets/icons';
 import { Gender, ViewMode } from '../../enums';
+import { t } from '../../i18n';
 import { AccentColorPicker } from '../accent-color-picker';
 import { Button } from '../button';
 import { Stepper } from '../stepper';
@@ -37,10 +38,10 @@ interface HealthStatsInput {
 }
 
 function getBmiCategory(bmi: number): string {
-  if (bmi < 18.5) return 'Insuffisance pondérale';
-  if (bmi < 25) return 'Poids normal';
-  if (bmi < 30) return 'Surpoids';
-  return 'Obésité';
+  if (bmi < 18.5) return t('profile.bmi.underweight');
+  if (bmi < 25) return t('profile.bmi.normal');
+  if (bmi < 30) return t('profile.bmi.overweight');
+  return t('profile.bmi.obese');
 }
 
 function getBmiColor(bmi: number, accentColor: string): string {
@@ -52,15 +53,15 @@ function getBmiColor(bmi: number, accentColor: string): string {
 
 function getBodyFatCategory(bodyFatPct: number, gender: Gender): string {
   if (gender === Gender.MALE) {
-    if (bodyFatPct < 10) return 'Athlétique';
-    if (bodyFatPct < 20) return 'Forme';
-    if (bodyFatPct < 25) return 'Moyen';
-    return 'Élevé';
+    if (bodyFatPct < 10) return t('profile.bodyFat.athletic');
+    if (bodyFatPct < 20) return t('profile.bodyFat.fit');
+    if (bodyFatPct < 25) return t('profile.bodyFat.average');
+    return t('profile.bodyFat.high');
   }
-  if (bodyFatPct < 18) return 'Athlétique';
-  if (bodyFatPct < 28) return 'Forme';
-  if (bodyFatPct < 32) return 'Moyen';
-  return 'Élevé';
+  if (bodyFatPct < 18) return t('profile.bodyFat.athletic');
+  if (bodyFatPct < 28) return t('profile.bodyFat.fit');
+  if (bodyFatPct < 32) return t('profile.bodyFat.average');
+  return t('profile.bodyFat.high');
 }
 
 function computeHealthStats(profile: HealthStatsInput & { accentColor: string }): HealthStats {
@@ -121,7 +122,7 @@ export function ProfilePage({
           }}>
           <IconBack />
         </button>
-        <h1 className="text-2xl font-900">Mon Profil</h1>
+        <h1 className="text-2xl font-900">{t('profile.title')}</h1>
       </div>
 
       <div className="px-5 space-y-5 pb-8">
@@ -130,14 +131,14 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Identité
+            {t('profile.section.identity')}
           </label>
           <div
             className="rounded-2xl overflow-hidden"
             style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
             <input
               className="w-full px-4 py-3.5 font-700 text-base outline-none"
-              placeholder="Prénom"
+              placeholder={t('profile.placeholder.firstName')}
               style={{
                 backgroundColor: 'transparent',
                 borderBottom: '1px solid #2a2a2a',
@@ -151,7 +152,7 @@ export function ProfilePage({
             />
             <input
               className="w-full px-4 py-3.5 font-700 text-base outline-none"
-              placeholder="Nom"
+              placeholder={t('profile.placeholder.lastName')}
               style={{ backgroundColor: 'transparent', color: '#f5f5f5' }}
               type="text"
               value={draft.lastName}
@@ -167,14 +168,14 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Genre
+            {t('profile.section.gender')}
           </label>
           <div className="flex gap-3">
             {([Gender.MALE, Gender.FEMALE] as const).map((g) => (
               <Button
                 key={g}
                 className="flex-1 py-3.5 rounded-xl font-800 capitalize transition-all active:scale-95"
-                label={g === Gender.MALE ? 'Homme' : 'Femme'}
+                label={g === Gender.MALE ? t('profile.gender.male') : t('profile.gender.female')}
                 style={{
                   backgroundColor: draft.gender === g ? draft.accentColor : '#1a1a1a',
                   border: draft.gender === g ? '1px solid transparent' : '1px solid #2a2a2a',
@@ -193,43 +194,45 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Données physiques
+            {t('profile.section.physical')}
           </label>
           <div
             className="rounded-2xl overflow-hidden px-4"
             style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-            {[
-              {
-                key: 'age' as const,
-                label: 'Âge',
-                min: 10,
-                step: 1,
-                unit: 'ans',
-                value: draft.age,
-              },
-              {
-                key: 'heightCm' as const,
-                label: 'Taille',
-                min: 100,
-                step: 1,
-                unit: 'cm',
-                value: draft.heightCm,
-              },
-              {
-                key: 'weightKg' as const,
-                label: 'Poids',
-                min: 30,
-                step: 1,
-                unit: 'kg',
-                value: draft.weightKg,
-              },
-            ].map((row, idx) => (
+            {(
+              [
+                {
+                  key: 'age' as const,
+                  labelKey: 'profile.field.age' as const,
+                  min: 10,
+                  step: 1,
+                  unit: 'ans',
+                  value: draft.age,
+                },
+                {
+                  key: 'heightCm' as const,
+                  labelKey: 'profile.field.height' as const,
+                  min: 100,
+                  step: 1,
+                  unit: 'cm',
+                  value: draft.heightCm,
+                },
+                {
+                  key: 'weightKg' as const,
+                  labelKey: 'profile.field.weight' as const,
+                  min: 30,
+                  step: 1,
+                  unit: 'kg',
+                  value: draft.weightKg,
+                },
+              ] as const
+            ).map((row, idx) => (
               <div
                 key={row.key}
                 className="flex items-center justify-between py-3.5"
                 style={{ borderBottom: idx < 2 ? '1px solid #2a2a2a' : 'none' }}>
                 <p className="text-sm font-700" style={{ color: '#aaa' }}>
-                  {row.label}
+                  {t(row.labelKey)}
                 </p>
                 <Stepper
                   min={row.min}
@@ -250,7 +253,7 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Données de santé
+            {t('profile.section.health')}
           </label>
           <div
             className="rounded-2xl overflow-hidden"
@@ -260,7 +263,7 @@ export function ProfilePage({
               <p
                 className="text-xs font-800 tracking-widest uppercase mb-3"
                 style={{ color: '#555' }}>
-                IMC
+                {t('profile.bmi.title')}
               </p>
               <div className="flex items-end justify-between mb-3">
                 <span className="text-5xl font-900 leading-none">{health.bmi}</span>
@@ -296,9 +299,9 @@ export function ProfilePage({
             <div className="p-4" style={{ borderBottom: '1px solid #2a2a2a' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-800 text-sm">IMG estimé</p>
+                  <p className="font-800 text-sm">{t('profile.bodyFat.title')}</p>
                   <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                    Deurenberg
+                    {t('profile.bodyFat.method')}
                   </p>
                 </div>
                 <div className="text-right">
@@ -311,27 +314,36 @@ export function ProfilePage({
                 </div>
               </div>
             </div>
-            {[
-              { label: 'FC max estimée', sub: '220 − âge', value: `${health.fcMax} bpm` },
-              {
-                label: 'Métabolisme de base',
-                sub: 'Harris-Benedict',
-                value: `${health.bmr} kcal/j`,
-              },
-              {
-                label: 'Poids idéal',
-                sub: 'Formule de Lorentz',
-                value: `${health.idealWeight} kg`,
-              },
-            ].map((s, idx) => (
+            {(
+              [
+                {
+                  id: 'fcMax' as const,
+                  labelKey: 'profile.health.fcMax.label' as const,
+                  subKey: 'profile.health.fcMax.sub' as const,
+                  value: t('profile.health.fcMax.value', { value: health.fcMax }),
+                },
+                {
+                  id: 'bmr' as const,
+                  labelKey: 'profile.health.bmr.label' as const,
+                  subKey: 'profile.health.bmr.sub' as const,
+                  value: t('profile.health.bmr.value', { value: health.bmr }),
+                },
+                {
+                  id: 'idealWeight' as const,
+                  labelKey: 'profile.health.idealWeight.label' as const,
+                  subKey: 'profile.health.idealWeight.sub' as const,
+                  value: t('profile.health.idealWeight.value', { value: health.idealWeight }),
+                },
+              ] as const
+            ).map((s, idx) => (
               <div
-                key={s.label}
+                key={s.id}
                 className="flex items-center justify-between px-4 py-3.5"
                 style={{ borderBottom: idx < 2 ? '1px solid #2a2a2a' : 'none' }}>
                 <div>
-                  <p className="font-800 text-sm">{s.label}</p>
+                  <p className="font-800 text-sm">{t(s.labelKey)}</p>
                   <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                    {s.sub}
+                    {t(s.subKey)}
                   </p>
                 </div>
                 <p className="font-900 text-base" style={{ color: draft.accentColor }}>
@@ -347,16 +359,16 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Série
+            {t('profile.section.streak')}
           </label>
           <div
             className="rounded-2xl px-4 py-4"
             style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-800 text-sm">Jours sans activité tolérés</p>
+                <p className="font-800 text-sm">{t('profile.streak.graceDays.title')}</p>
                 <p className="text-xs font-600 mt-1" style={{ color: '#555' }}>
-                  Les repos programmés ne comptent pas comme absence
+                  {t('profile.streak.graceDays.hint')}
                 </p>
               </div>
               <Stepper
@@ -378,7 +390,7 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Couleur d&apos;accent
+            {t('profile.section.accentColor')}
           </label>
           <AccentColorPicker
             value={draft.accentColor}
@@ -393,19 +405,19 @@ export function ProfilePage({
           <label
             className="block text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: draft.accentColor }}>
-            Vue programme
+            {t('profile.section.programmeView')}
           </label>
           <div className="flex gap-3">
             {(
               [
-                { id: ViewMode.WEEK, label: 'Semaine' },
-                { id: ViewMode.MONTH, label: 'Mois' },
+                { id: ViewMode.WEEK, labelKey: 'common.view.week' as const },
+                { id: ViewMode.MONTH, labelKey: 'common.view.month' as const },
               ] as const
             ).map((option) => (
               <Button
                 key={option.id}
                 className="flex-1 py-3.5 rounded-xl font-800 transition-all active:scale-95"
-                label={option.label}
+                label={t(option.labelKey)}
                 style={{
                   backgroundColor:
                     draft.defaultProgrammeView === option.id ? draft.accentColor : '#1a1a1a',
@@ -425,7 +437,7 @@ export function ProfilePage({
 
         <Button
           className="w-full rounded-2xl py-4 font-900 text-base transition-all active:scale-95"
-          label="Enregistrer le profil"
+          label={t('profile.save')}
           style={{ backgroundColor: draft.accentColor, color: '#0d0d0d' }}
           onClick={() => {
             onSave(draft);

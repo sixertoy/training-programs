@@ -16,13 +16,13 @@ import {
   subDays,
   subMonths,
 } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
 import type { WeekData } from '../data/week-history';
 import { ActivityCategory } from '../enums';
+import { dateFnsLocale, t } from '../i18n';
 import type { DayActivity, DayProgram } from '../interfaces';
 import {
-  ACTIVITY_CATEGORY_LABELS,
+  activityCategoryLabel,
   circuitDurationMin,
   dayDurationMin,
   DEFAULT_ACTIVITY_COLORS,
@@ -207,7 +207,7 @@ export function computeStreakAlert(
         graceLeft: 0,
         graceUsed,
         level: 'lost',
-        message: 'Série perdue — reprends aujourd’hui pour en démarrer une nouvelle',
+        message: t('stats.streak.lost'),
       };
     }
   }
@@ -217,7 +217,7 @@ export function computeStreakAlert(
       graceLeft,
       graceUsed,
       level: 'danger',
-      message: 'Plus que quelques heures pour sauver ta série',
+      message: t('stats.streak.danger'),
     };
   }
 
@@ -226,7 +226,7 @@ export function computeStreakAlert(
       graceLeft,
       graceUsed,
       level: 'warning',
-      message: `Ta série de ${dayStreak} jours est en danger`,
+      message: t('stats.streak.warning', { count: dayStreak }),
     };
   }
 
@@ -264,7 +264,7 @@ export function computePersonalBestMonth(datedDays: DatedDay[], circuits: Circui
   }
 
   const [year, month] = bestKey.split('-').map(Number);
-  const label = format(new Date(year, month - 1, 1), 'MMMM yyyy', { locale: fr });
+  const label = format(new Date(year, month - 1, 1), 'MMMM yyyy', { locale: dateFnsLocale });
   return {
     label: label.charAt(0).toUpperCase() + label.slice(1),
     totalMin: bestMin,
@@ -309,7 +309,7 @@ export function computeMonthlyVolume(
   for (let i = 0; i < months; i += 1) {
     const monthDate = addMonths(start, i);
     const key = format(monthDate, 'yyyy-MM');
-    const label = format(monthDate, 'MMM', { locale: fr });
+    const label = format(monthDate, 'MMM', { locale: dateFnsLocale });
     result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1), totalMin: 0 });
   }
 
@@ -364,7 +364,7 @@ export function computeCategoryRatioLast30Days(
   return (Object.keys(counts) as ActivityCategory[]).map((category) => ({
     category,
     color: DEFAULT_ACTIVITY_COLORS[category],
-    label: ACTIVITY_CATEGORY_LABELS[category],
+    label: activityCategoryLabel(category),
     value: counts[category],
   }));
 }

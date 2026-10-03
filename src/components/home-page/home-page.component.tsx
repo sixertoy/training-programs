@@ -1,5 +1,4 @@
 import { format, getDay } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useState } from 'react';
 import {
   Bar,
@@ -17,6 +16,7 @@ import { IconFlash, IconPlay, IconUser } from '../../assets/icons';
 import { WEEK_HISTORY } from '../../data/week-history';
 import type { Gender, ViewMode } from '../../enums';
 import { ActivityCategory } from '../../enums';
+import { dateFnsLocale, t, type TranslationKey } from '../../i18n';
 import type { DayProgram } from '../../interfaces';
 import {
   ACTIVITY_CATEGORY_LABELS,
@@ -62,10 +62,6 @@ function withAlpha(hex: string, opacity: number): string {
   return hex + alpha;
 }
 
-const DAY_SHORTS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
-
-const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-
 interface UserProfile {
   firstName: string;
   lastName: string;
@@ -81,7 +77,7 @@ interface UserProfile {
 interface NextSession {
   circuit: string;
   circuitId?: string;
-  day: string;
+  dayIndex: number;
   exercises: number;
 }
 
@@ -144,9 +140,13 @@ function getNextSession(days: DayProgram[], todayIndex: number): NextSession | n
   return {
     circuit: primary.name,
     circuitId: training?.meta.circuitId,
-    day: DAY_SHORTS[nextIndex] ?? '',
+    dayIndex: nextIndex,
     exercises: dayExerciseCount(day),
   };
+}
+
+function bodyPartLabel(part: string): string {
+  return t(`home.bodyParts.${part}` as TranslationKey);
 }
 
 function computeGlobalStats(
@@ -195,11 +195,6 @@ function getTodayIndex(date: Date = new Date()): number {
   return (getDay(date) + 6) % 7;
 }
 
-function humanizeKey(key: string): string {
-  if (!key) return key;
-  return key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, ' ');
-}
-
 export function HomePage({
   accent,
   circuits,
@@ -228,7 +223,7 @@ export function HomePage({
   const sortedParts = [...BODY_PARTS].sort((a, b) => bodyPartCount[b] - bodyPartCount[a]);
   const totalHours = Math.floor(totalMin / 60);
   const totalMinsRem = totalMin % 60;
-  const todayLabel = format(new Date(), 'EEEE · dd MMM yyyy', { locale: fr });
+  const todayLabel = format(new Date(), 'EEEE · dd MMM yyyy', { locale: dateFnsLocale });
   const todayHeading = todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1);
   const todayProgram = currentWeekDays[todayIndex];
   const today = new Date();
@@ -267,13 +262,13 @@ export function HomePage({
           <p className="text-xs font-800 tracking-widest uppercase" style={{ color: accent }}>
             {todayHeading}
           </p>
-          <h1 className="text-3xl font-900 mt-1">Bonjour,</h1>
+          <h1 className="text-3xl font-900 mt-1">{t('home.greeting')}</h1>
           <p className="text-3xl font-900" style={{ color: accent }}>
-            {profile.firstName || 'Athlète'} 👊
+            {profile.firstName || t('common.defaultAthleteName')} 👊
           </p>
         </div>
         <button
-          aria-label="Profil"
+          aria-label={t('common.aria.profile')}
           className="w-10 h-10 rounded-full flex items-center justify-center mt-2 transition-all active:scale-90"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
           onClick={onGoToProfile}>
@@ -289,18 +284,22 @@ export function HomePage({
             <p
               className="text-xs font-800 tracking-widest uppercase"
               style={{ color: '#0d0d0d90' }}>
-              Aujourd&apos;hui · {DAY_LABELS[todayIndex]}
+              {t('home.todayCard.heading', {
+                dayName: t(`common.days.full.${todayIndex}` as TranslationKey),
+              })}
             </p>
             <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
               {dayPrimaryLabel(todayProgram)}
             </h2>
             <p className="text-sm font-700 mt-1" style={{ color: '#0d0d0d80' }}>
-              {todayProgram.isRest ? 'Modifier' : `${daySummaryLabel(todayProgram)} · Modifier`}
+              {todayProgram.isRest
+                ? t('common.modify')
+                : `${daySummaryLabel(todayProgram)} · ${t('common.modify')}`}
             </p>
           </button>
           {firstTrainingCircuitId(todayProgram) && (
             <button
-              aria-label="Lancer le tabata"
+              aria-label={t('common.aria.startTabata')}
               className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
               style={{ backgroundColor: '#0d0d0d' }}
               onClick={(e) => {
@@ -318,7 +317,7 @@ export function HomePage({
       <Button
         className="mx-5 mb-5 rounded-2xl py-3.5 font-900 text-sm transition-all active:scale-95"
         icon={IconFlash}
-        label="Lancer un Tabata libre"
+        label={t('home.launchFreeTabata')}
         style={{ backgroundColor: accent, color: '#0d0d0d' }}
         onClick={onGoToFreeTabata}
       />
@@ -331,14 +330,14 @@ export function HomePage({
             <p
               className="text-xs font-800 tracking-widest uppercase mb-1"
               style={{ color: accent }}>
-              Série
+              {t('home.streak.title')}
             </p>
             <p className="text-sm font-700" style={{ color: '#eee' }}>
               {streakAlert.message}
             </p>
           </div>
           <button
-            aria-label="Fermer l'alerte"
+            aria-label={t('common.aria.closeAlert')}
             className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
             style={{ backgroundColor: '#2a2a2a', color: '#888' }}
             type="button"
@@ -355,28 +354,31 @@ export function HomePage({
           className="rounded-2xl p-4"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
           <p className="text-xs font-800 tracking-widest uppercase mb-2" style={{ color: '#555' }}>
-            Série
+            {t('home.streak.title')}
           </p>
           <p className="text-3xl font-900" style={{ color: accent }}>
             {dayStreak}
           </p>
           <p className="text-xs font-700 mt-1" style={{ color: '#888' }}>
-            jours · {weekStreak} sem.
+            {t('home.streak.subtitle', { weekStreak })}
           </p>
         </div>
         <div
           className="rounded-2xl p-4"
           style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
           <p className="text-xs font-800 tracking-widest uppercase mb-2" style={{ color: '#555' }}>
-            Record
+            {t('home.record.title')}
           </p>
           <p className="text-2xl font-900" style={{ color: accent }}>
             {personalBestHours > 0 ? `${personalBestHours}h` : `${personalBest.totalMin}m`}
           </p>
           <p className="text-xs font-700 mt-1" style={{ color: '#888' }}>
             {personalBest.totalMin > 0
-              ? `Ton record : ${personalBestHours}h en ${personalBest.label}`
-              : 'Pas encore de record'}
+              ? t('stats.personalBest.record', {
+                  hours: personalBestHours,
+                  monthLabel: personalBest.label,
+                })
+              : t('common.noRecordYet')}
           </p>
         </div>
       </div>
@@ -391,14 +393,14 @@ export function HomePage({
           <p
             className="text-xs font-800 tracking-widest uppercase mb-1"
             style={{ color: '#74C0FC' }}>
-            Récupération
+            {t('home.recovery.title')}
           </p>
           <p className="text-sm font-700" style={{ color: '#ddd' }}>
-            {recovery.hardDays} jours intenses sans Flow — planifie une séance de mobilité.
+            {t('home.recovery.message', { count: recovery.hardDays })}
           </p>
           <Button
             className="mt-2 text-xs font-800"
-            label="Ouvrir le programme →"
+            label={t('home.recovery.openProgramme')}
             style={{ color: accent }}
             onClick={onGoToWeekly}
           />
@@ -410,7 +412,7 @@ export function HomePage({
           <p
             className="text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: '#555' }}>
-            Prochaine séance
+            {t('home.nextSession.title')}
           </p>
           <div
             className="rounded-2xl p-5 flex items-center justify-between"
@@ -423,15 +425,15 @@ export function HomePage({
                 <span
                   className="text-xs font-900 tracking-widest uppercase px-2.5 py-1 rounded-full"
                   style={{ backgroundColor: withAlpha(accent, 0.13), color: accent }}>
-                  {nextSession.day}
+                  {t(`common.days.short.${nextSession.dayIndex}` as TranslationKey)}
                 </span>
                 <span className="text-xs font-700" style={{ color: '#555' }}>
-                  demain
+                  {t('common.tomorrow')}
                 </span>
               </div>
               <p className="text-xl font-900">{nextSession.circuit}</p>
               <p className="text-sm font-600 mt-1" style={{ color: '#666' }}>
-                {nextSession.exercises} exercices
+                {t('activity.exercises', { count: nextSession.exercises })}
               </p>
             </div>
           </div>
@@ -440,23 +442,28 @@ export function HomePage({
 
       <div className="px-5 mb-5">
         <p className="text-xs font-800 tracking-widest uppercase mb-2.5" style={{ color: '#555' }}>
-          Statistiques globales
+          {t('home.globalStats.title')}
         </p>
         <div className="grid grid-cols-3 gap-2.5">
-          {[
-            { label: 'Entraîné', value: `${totalHours}h${totalMinsRem > 0 ? totalMinsRem : ''}` },
-            { label: 'Séances', value: `${totalSessions}` },
-            { label: 'Exercices', value: `${totalExerciseReps}` },
-          ].map((s) => (
+          {(
+            [
+              {
+                labelKey: 'home.globalStats.trained' as const,
+                value: `${totalHours}h${totalMinsRem > 0 ? totalMinsRem : ''}`,
+              },
+              { labelKey: 'home.globalStats.sessions' as const, value: `${totalSessions}` },
+              { labelKey: 'home.globalStats.exercises' as const, value: `${totalExerciseReps}` },
+            ] as const
+          ).map((s) => (
             <div
-              key={s.label}
+              key={s.labelKey}
               className="rounded-2xl p-4 flex flex-col items-center text-center"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
               <p className="text-2xl font-900 leading-tight" style={{ color: accent }}>
                 {s.value}
               </p>
               <p className="text-xs font-700 mt-1" style={{ color: '#555' }}>
-                {s.label}
+                {t(s.labelKey)}
               </p>
             </div>
           ))}
@@ -467,7 +474,7 @@ export function HomePage({
         className="mx-5 mb-5 rounded-2xl p-4"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
         <p className="text-xs font-800 tracking-widest uppercase mb-1" style={{ color: '#555' }}>
-          Calories estimées
+          {t('home.calories.title')}
         </p>
         <p className="text-3xl font-900" style={{ color: accent }}>
           {calories}
@@ -476,7 +483,7 @@ export function HomePage({
           </span>
         </p>
         <p className="text-xs font-600 mt-1" style={{ color: '#555' }}>
-          Méthode MET · estimation
+          {t('home.calories.method')}
         </p>
       </div>
 
@@ -484,7 +491,7 @@ export function HomePage({
         className="mx-5 mb-5 rounded-2xl p-4"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
         <p className="text-xs font-800 tracking-widest uppercase mb-3" style={{ color: '#555' }}>
-          Charge mensuelle
+          {t('home.monthlyLoad.title')}
         </p>
         <div style={{ height: 160, width: '100%' }}>
           <ResponsiveContainer>
@@ -497,7 +504,10 @@ export function HomePage({
                   border: '1px solid #2a2a2a',
                   borderRadius: 12,
                 }}
-                formatter={(value) => [`${String(value)} min`, 'Volume']}
+                formatter={(value) => [
+                  t('home.monthlyLoad.tooltip', { value: String(value) }),
+                  t('home.monthlyLoad.volume'),
+                ]}
               />
               <Bar dataKey="totalMin" fill={accent} radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -507,7 +517,7 @@ export function HomePage({
 
       <div className="mx-5 mb-5">
         <p className="text-xs font-800 tracking-widest uppercase mb-2.5" style={{ color: '#555' }}>
-          Séances par catégorie
+          {t('home.sessionsByCategory.title')}
         </p>
         <div className="grid grid-cols-3 gap-2.5">
           {(
@@ -532,11 +542,11 @@ export function HomePage({
         className="mx-5 mb-5 rounded-2xl p-4"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
         <p className="text-xs font-800 tracking-widest uppercase mb-3" style={{ color: '#555' }}>
-          Équilibre 30 jours
+          {t('home.balance30.title')}
         </p>
         {pieTotal === 0 ? (
           <p className="text-sm font-700" style={{ color: '#555' }}>
-            Pas encore d&apos;activités sur 30 jours
+            {t('home.balance30.empty')}
           </p>
         ) : (
           <div className="flex items-center gap-3">
@@ -585,7 +595,7 @@ export function HomePage({
         className="mx-5 mb-5 rounded-2xl p-4"
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
         <p className="text-xs font-800 tracking-widest uppercase mb-4" style={{ color: '#555' }}>
-          Parties du corps travaillées
+          {t('home.bodyParts.title')}
         </p>
         <div className="space-y-3">
           {sortedParts.map((part) => {
@@ -595,12 +605,12 @@ export function HomePage({
               <div key={part}>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm font-800" style={{ color: count > 0 ? '#ccc' : '#444' }}>
-                    {humanizeKey(part)}
+                    {bodyPartLabel(part)}
                   </span>
                   <span
                     className="text-xs font-900"
                     style={{ color: count > 0 ? TAG_COLORS[part] : '#333' }}>
-                    {count > 0 ? `${count}×` : '—'}
+                    {count > 0 ? `${count}×` : t('common.emDash')}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full" style={{ backgroundColor: '#2a2a2a' }}>
@@ -619,7 +629,7 @@ export function HomePage({
 
       <Button
         className="mx-5 mb-8 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
-        label="Voir le programme complet →"
+        label={t('home.viewFullProgramme')}
         style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
         onClick={onGoToWeekly}
       />

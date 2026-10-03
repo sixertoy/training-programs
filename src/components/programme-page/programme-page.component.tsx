@@ -18,7 +18,6 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import React, { useState } from 'react';
 
 import {
@@ -33,9 +32,10 @@ import {
 import { WEEK_HISTORY } from '../../data/week-history';
 import type { TabataMode } from '../../enums';
 import { ActivityCategory, FlowKind, ViewMode } from '../../enums';
+import type { TranslationKey } from '../../i18n';
+import { dateFnsLocale, t } from '../../i18n';
 import type { DayActivity, DayProgram } from '../../interfaces';
 import {
-  ACTIVITY_CATEGORY_LABELS,
   activityMetaLabel,
   circuitDurationMin,
   createFlowActivity,
@@ -47,7 +47,6 @@ import {
   daySummaryLabel,
   DEFAULT_ACTIVITY_COLORS,
   firstTrainingActivity,
-  FLOW_KIND_LABELS,
   isSameDayProgram,
 } from '../../utils';
 import { Button } from '../button';
@@ -69,9 +68,24 @@ interface Circuit {
 
 type AddStep = 'idle' | 'category' | 'training' | 'running' | 'flow';
 
-const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-const DAY_LETTER_HEADERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const DAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
 const WEEK_START_OPTIONS = { weekStartsOn: 1 as const };
+
+function dayFullLabel(index: number): string {
+  return t(`common.days.full.${index}` as TranslationKey);
+}
+
+function dayShortLabel(index: number): string {
+  return t(`common.days.short.${index}` as TranslationKey);
+}
+
+function activityCategoryLabel(category: ActivityCategory): string {
+  return t(`activity.category.${category}`);
+}
+
+function flowKindLabel(kind: FlowKind): string {
+  return t(`activity.flowKind.${kind}`);
+}
 
 const CATEGORY_ADD_STEP: Record<ActivityCategory, Exclude<AddStep, 'idle' | 'category'>> = {
   [ActivityCategory.FLOW]: 'flow',
@@ -119,17 +133,21 @@ function monthOffsetFromDate(date: Date, from: Date = new Date()): number {
 }
 
 function formatWeekLabel(weekStart: Date): string {
-  return `Semaine ${getISOWeek(weekStart)} · ${getISOWeekYear(weekStart)}`;
+  return t('programme.weekLabel', {
+    isoWeek: getISOWeek(weekStart),
+    isoYear: getISOWeekYear(weekStart),
+  });
 }
 
 function formatDateRange(weekStart: Date): string {
   const weekEnd = endOfWeek(weekStart, WEEK_START_OPTIONS);
   const sameMonth =
-    format(weekStart, 'MMM', { locale: fr }) === format(weekEnd, 'MMM', { locale: fr });
+    format(weekStart, 'MMM', { locale: dateFnsLocale }) ===
+    format(weekEnd, 'MMM', { locale: dateFnsLocale });
   if (sameMonth) {
-    return `${format(weekStart, 'dd', { locale: fr })} – ${format(weekEnd, 'dd MMM', { locale: fr })}`;
+    return `${format(weekStart, 'dd', { locale: dateFnsLocale })} – ${format(weekEnd, 'dd MMM', { locale: dateFnsLocale })}`;
   }
-  return `${format(weekStart, 'dd MMM', { locale: fr })} – ${format(weekEnd, 'dd MMM', { locale: fr })}`;
+  return `${format(weekStart, 'dd MMM', { locale: dateFnsLocale })} – ${format(weekEnd, 'dd MMM', { locale: dateFnsLocale })}`;
 }
 
 function getWeekDayNumbers(weekStart: Date): string[] {
@@ -178,7 +196,7 @@ function getDayProgram(date: Date, weekPrograms: Record<string, DayProgram[]>): 
 }
 
 function formatMonthLabel(monthStart: Date): string {
-  const label = format(monthStart, 'MMMM yyyy', { locale: fr });
+  const label = format(monthStart, 'MMMM yyyy', { locale: dateFnsLocale });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
@@ -241,9 +259,9 @@ function PeriodStatsRow({
   return (
     <div className="mx-5 mb-4 grid grid-cols-3 gap-2">
       {[
-        { label: 'Séances', value: `${stats.sessions}` },
-        { label: 'Minutes', value: `${stats.totalMin}` },
-        { label: 'Exos', value: `${stats.exercises}` },
+        { label: t('programme.periodStats.sessions'), value: `${stats.sessions}` },
+        { label: t('programme.periodStats.minutes'), value: `${stats.totalMin}` },
+        { label: t('programme.periodStats.exercisesShort'), value: `${stats.exercises}` },
       ].map((s) => (
         <div
           key={s.label}
@@ -285,11 +303,11 @@ function DayActivitiesSheet({
   const [draft, setDraft] = useState<DayProgram>(day);
   const [addStep, setAddStep] = useState<AddStep>('idle');
   const [pendingAssign, setPendingAssign] = useState<DayProgram | null>(null);
-  const [runningName, setRunningName] = useState('Course');
+  const [runningName, setRunningName] = useState(() => t('activity.runningDefaultName'));
   const [runningDistance, setRunningDistance] = useState(5);
   const [runningDuration, setRunningDuration] = useState(30);
   const [runningInterval, setRunningInterval] = useState(false);
-  const [flowName, setFlowName] = useState('Session flow');
+  const [flowName, setFlowName] = useState(() => t('activity.flowDefaultName'));
   const [flowDuration, setFlowDuration] = useState(20);
   const [flowKind, setFlowKind] = useState<FlowKind>(FlowKind.YOGA);
 
@@ -325,13 +343,13 @@ function DayActivitiesSheet({
 
   let pendingLabel = '';
   if (pendingAssign) {
-    pendingLabel = pendingAssign.isRest ? 'Repos' : dayPrimaryLabel(pendingAssign);
+    pendingLabel = pendingAssign.isRest ? t('common.rest') : dayPrimaryLabel(pendingAssign);
   }
 
   return (
     <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 50 }}>
       <button
-        aria-label="Fermer"
+        aria-label={t('common.aria.close')}
         className="absolute inset-0"
         style={{ backgroundColor: '#00000085' }}
         type="button"
@@ -344,9 +362,9 @@ function DayActivitiesSheet({
         style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '85%' }}>
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="font-900 text-lg">{DAY_LABELS[dayIndex]}</p>
+            <p className="font-900 text-lg">{dayFullLabel(dayIndex)}</p>
             <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
-              {format(dayDate, 'dd MMM yyyy', { locale: fr })}
+              {format(dayDate, 'dd MMM yyyy', { locale: dateFnsLocale })}
             </p>
           </div>
           <button
@@ -367,7 +385,7 @@ function DayActivitiesSheet({
               }}
               onClick={setRest}>
               <IconCouch />
-              <span className="font-800 flex-1 text-left">Repos</span>
+              <span className="font-800 flex-1 text-left">{t('common.rest')}</span>
               {draft.isRest && (
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center"
@@ -390,7 +408,7 @@ function DayActivitiesSheet({
             <p
               className="text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: '#555' }}>
-              Activités journalières
+              {t('programme.sheet.dailyActivities')}
             </p>
 
             <div className="space-y-2 overflow-y-auto mb-3" style={{ maxHeight: 240 }}>
@@ -399,7 +417,7 @@ function DayActivitiesSheet({
                   className="rounded-2xl px-4 py-6 text-center"
                   style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
                   <p className="text-sm font-700" style={{ color: '#555' }}>
-                    Aucune activité pour ce jour
+                    {t('programme.sheet.noActivities')}
                   </p>
                 </div>
               ) : (
@@ -418,12 +436,12 @@ function DayActivitiesSheet({
                     <div className="flex-1 text-left min-w-0">
                       <p className="font-800 text-sm truncate">{activity.name}</p>
                       <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                        {ACTIVITY_CATEGORY_LABELS[activity.category]} ·{' '}
+                        {activityCategoryLabel(activity.category)} ·{' '}
                         {activityMetaLabel(activity, circuits)}
                       </p>
                     </div>
                     <button
-                      aria-label="Retirer l'activité"
+                      aria-label={t('common.aria.removeActivity')}
                       className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                       style={{ backgroundColor: '#2a2a2a', color: '#888' }}
                       onClick={() => {
@@ -439,7 +457,7 @@ function DayActivitiesSheet({
             <Button
               className="w-full rounded-2xl py-3 font-800 text-sm transition-all active:scale-95"
               icon={IconPlus}
-              label="Ajouter une activité"
+              label={t('programme.sheet.addActivity')}
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -454,7 +472,7 @@ function DayActivitiesSheet({
 
         {addStep === 'category' && (
           <React.Fragment>
-            <p className="font-900 text-base mb-3">Choisir une catégorie</p>
+            <p className="font-900 text-base mb-3">{t('programme.sheet.chooseCategory')}</p>
             <div className="space-y-2 mb-3">
               {(
                 [
@@ -478,13 +496,13 @@ function DayActivitiesSheet({
                     className="inline-block w-2.5 h-2.5 rounded-full mr-3"
                     style={{ backgroundColor: DEFAULT_ACTIVITY_COLORS[category] }}
                   />
-                  {ACTIVITY_CATEGORY_LABELS[category]}
+                  {activityCategoryLabel(category)}
                 </button>
               ))}
             </div>
             <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
-              label="Retour"
+              label={t('common.back')}
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('idle');
@@ -495,7 +513,7 @@ function DayActivitiesSheet({
 
         {addStep === 'training' && (
           <React.Fragment>
-            <p className="font-900 text-base mb-3">Training — circuits</p>
+            <p className="font-900 text-base mb-3">{t('programme.sheet.trainingCircuitsTitle')}</p>
             <div className="space-y-2 overflow-y-auto mb-3" style={{ maxHeight: 240 }}>
               {circuits.map((c) => (
                 <button
@@ -512,8 +530,12 @@ function DayActivitiesSheet({
                   <div className="flex-1 text-left">
                     <p className="font-800 text-sm">{c.name}</p>
                     <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-                      {c.exerciseIds.length} exo · {c.rounds} rounds · {c.cycles} cycles · ~
-                      {circuitDurationMin(c)} min
+                      {t('programme.sheet.circuitMeta', {
+                        cycles: c.cycles,
+                        duration: circuitDurationMin(c),
+                        exercises: c.exerciseIds.length,
+                        rounds: c.rounds,
+                      })}
                     </p>
                   </div>
                 </button>
@@ -522,7 +544,7 @@ function DayActivitiesSheet({
             <Button
               className="w-full mb-2 rounded-2xl py-3 font-800 text-sm transition-all active:scale-95"
               icon={IconPlus}
-              label="Nouveau circuit"
+              label={t('programme.sheet.newCircuit')}
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -532,7 +554,7 @@ function DayActivitiesSheet({
             />
             <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
-              label="Retour"
+              label={t('common.back')}
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
@@ -543,11 +565,11 @@ function DayActivitiesSheet({
 
         {addStep === 'running' && (
           <React.Fragment>
-            <p className="font-900 text-base mb-3">Running</p>
+            <p className="font-900 text-base mb-3">{t('programme.sheet.runningTitle')}</p>
             <div className="space-y-3 mb-3">
               <input
                 className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
-                placeholder="Nom"
+                placeholder={t('common.name')}
                 style={{
                   backgroundColor: '#1a1a1a',
                   border: '1px solid #2a2a2a',
@@ -563,7 +585,7 @@ function DayActivitiesSheet({
                 className="rounded-2xl px-4 py-3 space-y-3"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-800">Distance</span>
+                  <span className="text-sm font-800">{t('programme.sheet.distance')}</span>
                   <Stepper
                     min={0}
                     step={0.5}
@@ -573,7 +595,7 @@ function DayActivitiesSheet({
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-800">Durée</span>
+                  <span className="text-sm font-800">{t('programme.sheet.duration')}</span>
                   <Stepper
                     min={0}
                     step={5}
@@ -595,7 +617,7 @@ function DayActivitiesSheet({
                 onClick={() => {
                   setRunningInterval((v) => !v);
                 }}>
-                Fractionné
+                {t('activity.interval')}
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center"
                   style={{
@@ -608,7 +630,7 @@ function DayActivitiesSheet({
             </div>
             <Button
               className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
-              label="Ajouter"
+              label={t('common.add')}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 addActivity(
@@ -616,14 +638,14 @@ function DayActivitiesSheet({
                     distanceKm: runningDistance > 0 ? runningDistance : undefined,
                     durationMin: runningDuration > 0 ? runningDuration : undefined,
                     isInterval: runningInterval,
-                    name: runningName.trim() || 'Course',
+                    name: runningName.trim() || t('activity.runningDefaultName'),
                   }),
                 );
               }}
             />
             <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
-              label="Retour"
+              label={t('common.back')}
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
@@ -634,11 +656,11 @@ function DayActivitiesSheet({
 
         {addStep === 'flow' && (
           <React.Fragment>
-            <p className="font-900 text-base mb-3">Flow</p>
+            <p className="font-900 text-base mb-3">{t('programme.sheet.flowTitle')}</p>
             <div className="space-y-3 mb-3">
               <input
                 className="w-full rounded-2xl px-4 py-3 font-700 outline-none"
-                placeholder="Nom"
+                placeholder={t('common.name')}
                 style={{
                   backgroundColor: '#1a1a1a',
                   border: '1px solid #2a2a2a',
@@ -653,7 +675,7 @@ function DayActivitiesSheet({
               <div
                 className="rounded-2xl px-4 py-3 flex items-center justify-between"
                 style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-                <span className="text-sm font-800">Durée</span>
+                <span className="text-sm font-800">{t('programme.sheet.duration')}</span>
                 <Stepper
                   min={0}
                   step={5}
@@ -668,7 +690,7 @@ function DayActivitiesSheet({
                     <Button
                       key={kind}
                       className="flex-1 rounded-xl py-2.5 font-800 text-xs transition-all active:scale-95"
-                      label={FLOW_KIND_LABELS[kind]}
+                      label={flowKindLabel(kind)}
                       style={{
                         backgroundColor: flowKind === kind ? accent : '#1a1a1a',
                         border: flowKind === kind ? '1px solid transparent' : '1px solid #2a2a2a',
@@ -684,21 +706,21 @@ function DayActivitiesSheet({
             </div>
             <Button
               className="w-full mb-2 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
-              label="Ajouter"
+              label={t('common.add')}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={() => {
                 addActivity(
                   createFlowActivity({
                     durationMin: flowDuration > 0 ? flowDuration : undefined,
                     flowKind,
-                    name: flowName.trim() || FLOW_KIND_LABELS[flowKind],
+                    name: flowName.trim() || flowKindLabel(flowKind),
                   }),
                 );
               }}
             />
             <Button
               className="w-full rounded-2xl py-3 font-800 text-sm"
-              label="Retour"
+              label={t('common.back')}
               style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
               onClick={() => {
                 setAddStep('category');
@@ -713,7 +735,7 @@ function DayActivitiesSheet({
           className="absolute inset-0 flex items-center justify-center px-6"
           style={{ zIndex: 60 }}>
           <button
-            aria-label="Annuler"
+            aria-label={t('common.aria.cancel')}
             className="absolute inset-0"
             style={{ backgroundColor: '#000000a0' }}
             type="button"
@@ -724,15 +746,17 @@ function DayActivitiesSheet({
           <div
             className="relative w-full rounded-2xl p-5"
             style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a' }}>
-            <p className="font-900 text-lg mb-2">Confirmer la modification</p>
+            <p className="font-900 text-lg mb-2">{t('programme.sheet.confirmPastEditTitle')}</p>
             <p className="text-sm font-600 mb-5" style={{ color: '#888' }}>
-              Tu modifies un jour passé ({format(dayDate, 'EEEE dd MMM yyyy', { locale: fr })}) vers
-              « {pendingLabel} ». Continuer ?
+              {t('programme.sheet.confirmPastEditBody', {
+                date: format(dayDate, 'EEEE dd MMM yyyy', { locale: dateFnsLocale }),
+                label: pendingLabel,
+              })}
             </p>
             <div className="flex gap-3">
               <Button
                 className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
-                label="Annuler"
+                label={t('common.cancel')}
                 style={{ backgroundColor: '#2a2a2a', color: '#ccc' }}
                 onClick={() => {
                   setPendingAssign(null);
@@ -740,7 +764,7 @@ function DayActivitiesSheet({
               />
               <Button
                 className="flex-1 rounded-2xl py-3.5 font-800 text-sm transition-all active:scale-95"
-                label="Confirmer"
+                label={t('common.confirm')}
                 style={{ backgroundColor: accent, color: '#0d0d0d' }}
                 onClick={() => {
                   onAssign(pendingAssign);
@@ -792,8 +816,8 @@ export function ProgrammePage({
   const monthStats = computeMonthStats(monthStart, weekPrograms, circuits);
   const today = new Date();
   const todayInMonth = isSameMonth(today, monthStart);
-  const headerDayName = format(today, 'EEEE', { locale: fr });
-  const headerDateTitle = format(today, 'd MMMM yyyy', { locale: fr });
+  const headerDayName = format(today, 'EEEE', { locale: dateFnsLocale });
+  const headerDateTitle = format(today, 'd MMMM yyyy', { locale: dateFnsLocale });
   const todayIndex = getTodayIndex(today);
   const todayProgram = resolveWeekDays(getWeekStart(0), weekPrograms)[todayIndex];
   const todayTraining = firstTrainingActivity(todayProgram);
@@ -834,8 +858,8 @@ export function ProgrammePage({
       style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
       {(
         [
-          { icon: <IconWeek />, id: ViewMode.WEEK, label: 'Semaine' },
-          { icon: <IconCalendar />, id: ViewMode.MONTH, label: 'Mois' },
+          { icon: <IconWeek />, id: ViewMode.WEEK, label: t('common.view.week') },
+          { icon: <IconCalendar />, id: ViewMode.MONTH, label: t('common.view.month') },
         ] as const
       ).map((tab) => {
         const active = viewMode === tab.id;
@@ -862,7 +886,7 @@ export function ProgrammePage({
     <div className="flex flex-col h-full overflow-hidden relative">
       <div className="flex-1 overflow-y-auto">
         <div className="px-5 pt-8 pb-4">
-          <h1 className="text-3xl font-900">Programme</h1>
+          <h1 className="text-3xl font-900">{t('programme.title')}</h1>
           <div className="flex items-center justify-between gap-3 mt-3">
             <div className="min-w-0">
               <p
@@ -885,7 +909,7 @@ export function ProgrammePage({
                 <p
                   className="text-xs font-800 tracking-widest uppercase"
                   style={{ color: '#0d0d0d90' }}>
-                  Aujourd&apos;hui · {DAY_LABELS[todayIndex]}
+                  {t('programme.todayCard.heading', { dayName: dayFullLabel(todayIndex) })}
                 </p>
                 <h2 className="text-2xl font-900 mt-1" style={{ color: '#0d0d0d' }}>
                   {dayPrimaryLabel(todayProgram)}
@@ -895,7 +919,7 @@ export function ProgrammePage({
                 </p>
               </div>
               <button
-                aria-label="Lancer la séance"
+                aria-label={t('common.aria.startSession')}
                 className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 shrink-0"
                 style={{ backgroundColor: '#0d0d0d' }}
                 onClick={() => {
@@ -918,7 +942,7 @@ export function ProgrammePage({
               className="mx-5 mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
               style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}>
               <button
-                aria-label="Semaine précédente"
+                aria-label={t('common.aria.previousWeek')}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
                 style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
@@ -938,13 +962,13 @@ export function ProgrammePage({
                 <Button
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
                   disabled={isCurrentPeriod}
-                  label="Aujourd'hui"
+                  label={t('common.today')}
                   style={{ backgroundColor: '#2a2a2a', color: accent }}
                   onClick={goToToday}
                 />
               </div>
               <button
-                aria-label="Semaine suivante"
+                aria-label={t('common.aria.nextWeek')}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
                 style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
@@ -996,7 +1020,7 @@ export function ProgrammePage({
                       <div className="flex items-center gap-3 flex-1">
                         <IconCouch />
                         <p className="font-700" style={{ color: '#555' }}>
-                          Repos
+                          {t('common.rest')}
                         </p>
                       </div>
                     ) : (
@@ -1026,7 +1050,7 @@ export function ProgrammePage({
                       <span
                         className="text-xs font-800 px-2.5 py-1 rounded-full shrink-0"
                         style={{ backgroundColor: withAlpha(accent, 0.12), color: accent }}>
-                        En cours
+                        {t('common.inProgress')}
                       </span>
                     )}
                     {isDone && (
@@ -1060,7 +1084,7 @@ export function ProgrammePage({
           <React.Fragment>
             <div className="mx-5 mb-4 flex items-center justify-between">
               <button
-                aria-label="Mois précédent"
+                aria-label={t('common.aria.previousMonth')}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
                 style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
@@ -1075,13 +1099,13 @@ export function ProgrammePage({
                 <Button
                   className="mt-1.5 text-xs font-800 px-2.5 py-1 rounded-full transition-all active:scale-95 disabled:opacity-40"
                   disabled={isCurrentPeriod}
-                  label="Aujourd'hui"
+                  label={t('common.today')}
                   style={{ backgroundColor: '#2a2a2a', color: accent }}
                   onClick={goToToday}
                 />
               </div>
               <button
-                aria-label="Mois suivant"
+                aria-label={t('common.aria.nextMonth')}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90"
                 style={{ backgroundColor: '#2a2a2a', color: '#aaa' }}
                 onClick={() => {
@@ -1096,17 +1120,14 @@ export function ProgrammePage({
             <div className="px-5 mb-6">
               <div className="grid gap-1" style={{ gridTemplateColumns: '28px repeat(7, 1fr)' }}>
                 <div />
-                {DAY_LETTER_HEADERS.map((letter, i) => {
-                  const key = `${letter}-${i}`;
-                  return (
-                    <div
-                      key={key}
-                      className="text-center text-xs font-800 py-1"
-                      style={{ color: '#555' }}>
-                      {letter}
-                    </div>
-                  );
-                })}
+                {DAY_INDICES.map((i) => (
+                  <div
+                    key={i}
+                    className="text-center text-xs font-800 py-1"
+                    style={{ color: '#555' }}>
+                    {dayShortLabel(i)}
+                  </div>
+                ))}
                 {Array.from({ length: 6 }, (_, weekRow) => {
                   const rowStart = monthGridDays[weekRow * 7];
                   const weekNumber = getISOWeek(rowStart);

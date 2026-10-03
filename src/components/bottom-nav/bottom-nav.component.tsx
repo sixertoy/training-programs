@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { IconCalendar, IconDumbbell, IconFlash, IconHome } from '../../assets/icons';
 import { Screen } from '../../enums';
+import { t } from '../../i18n';
 
 type NavTarget = Screen.HOME | Screen.WEEKLY | Screen.CIRCUITS | Screen.TABATA;
 
@@ -13,10 +14,10 @@ interface BottomNavProps {
 
 export const BottomNav = ({ accent, onNavigate, screen }: BottomNavProps) => {
   const items: { id: NavTarget; label: string; icon: ReactNode }[] = [
-    { icon: <IconHome />, id: Screen.HOME, label: 'Accueil' },
-    { icon: <IconCalendar />, id: Screen.WEEKLY, label: 'Programme' },
-    { icon: <IconDumbbell />, id: Screen.CIRCUITS, label: 'Circuits' },
-    { icon: <IconFlash />, id: Screen.TABATA, label: 'Tabata' },
+    { icon: <IconHome />, id: Screen.HOME, label: t('nav.home') },
+    { icon: <IconCalendar />, id: Screen.WEEKLY, label: t('nav.programme') },
+    { icon: <IconDumbbell />, id: Screen.CIRCUITS, label: t('nav.circuits') },
+    { icon: <IconFlash />, id: Screen.TABATA, label: t('nav.tabata') },
   ];
   return (
     <div

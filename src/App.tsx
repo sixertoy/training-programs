@@ -13,6 +13,7 @@ import freeTabataDefaults from './config/tabata-free.json';
 import { SEED_CIRCUIT_IDS, SEED_EXERCISE_IDS } from './data/seed-ids';
 import { WEEK_HISTORY } from './data/week-history';
 import { Gender, Screen, TabataMode, ViewMode } from './enums';
+import { t } from './i18n';
 import type { DayProgram } from './interfaces';
 import { firstTrainingActivity } from './utils';
 
@@ -177,7 +178,7 @@ function createFreeTabataCircuit(accent: string): Circuit {
     color: accent,
     exerciseIds: [],
     id: uuidv4(),
-    name: 'Tabata libre',
+    name: t('tabata.freeCircuitName'),
   };
 }
 

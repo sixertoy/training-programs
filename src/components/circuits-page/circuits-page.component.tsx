@@ -1,4 +1,5 @@
 import { IconPlus } from '../../assets/icons';
+import { t } from '../../i18n';
 import { Button } from '../button';
 
 enum AccentColor {
@@ -90,13 +91,13 @@ export function CircuitsPage({
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-5 pt-8 pb-4 flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-900">Mes Circuits</h1>
+          <h1 className="text-3xl font-900">{t('circuits.title')}</h1>
           <p className="text-sm mt-0.5" style={{ color: '#888' }}>
-            {circuits.length} circuit{circuits.length > 1 ? 's' : ''}
+            {t('circuits.count', { count: circuits.length })}
           </p>
         </div>
         <button
-          aria-label="Créer un circuit"
+          aria-label={t('common.aria.createCircuit')}
           className="w-11 h-11 rounded-full flex items-center justify-center transition-all active:scale-90"
           style={{ backgroundColor: accent, color: '#0d0d0d' }}
           onClick={onCreateNew}>
@@ -109,11 +110,11 @@ export function CircuitsPage({
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <p className="text-5xl">💪</p>
             <p className="font-800 text-center" style={{ color: '#555' }}>
-              Aucun circuit encore
+              {t('circuits.empty')}
             </p>
             <Button
               className="px-6 py-3.5 rounded-2xl font-900"
-              label="Créer mon premier circuit"
+              label={t('circuits.createFirst')}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={onCreateNew}
             />
@@ -132,12 +133,16 @@ export function CircuitsPage({
                   <div className="flex-1 min-w-0">
                     <h3 className="font-900 text-base">{c.name}</h3>
                     <p className="text-xs font-700 mt-1" style={{ color: '#555' }}>
-                      {c.cycles} cycles · {c.rounds} rounds · ~{circuitDurationMin(c)} min
+                      {t('circuits.meta', {
+                        cycles: c.cycles,
+                        duration: circuitDurationMin(c),
+                        rounds: c.rounds,
+                      })}
                     </p>
                   </div>
                   <Button
                     className="text-xs font-800 px-3 py-1.5 rounded-xl transition-all active:scale-95 shrink-0"
-                    label="Éditer"
+                    label={t('common.edit')}
                     style={{ backgroundColor: withAlpha(c.color, 0.12), color: c.color }}
                     onClick={() => {
                       onEdit(c.id);
@@ -147,16 +152,28 @@ export function CircuitsPage({
 
                 <div className="flex gap-2 flex-wrap mb-3">
                   {[
-                    `⚡ ${c.exerciseTime}s travail`,
-                    `💤 ${c.restBetweenExercises}s repos`,
-                    `🔄 ${c.restBetweenCycles}s inter-cycle`,
-                    `🏁 ${c.prepTime}s prép.`,
+                    {
+                      id: 'work',
+                      label: t('circuits.badge.work', { seconds: c.exerciseTime }),
+                    },
+                    {
+                      id: 'rest',
+                      label: t('circuits.badge.rest', { seconds: c.restBetweenExercises }),
+                    },
+                    {
+                      id: 'interCycle',
+                      label: t('circuits.badge.interCycle', { seconds: c.restBetweenCycles }),
+                    },
+                    {
+                      id: 'prep',
+                      label: t('circuits.badge.prep', { seconds: c.prepTime }),
+                    },
                   ].map((b) => (
                     <span
-                      key={b}
+                      key={b.id}
                       className="text-xs font-700 px-2.5 py-1 rounded-full"
                       style={{ backgroundColor: '#2a2a2a', color: '#666' }}>
-                      {b}
+                      {b.label}
                     </span>
                   ))}
                 </div>

@@ -1,5 +1,6 @@
 export {
   ACTIVITY_CATEGORY_LABELS,
+  activityCategoryLabel,
   activityMetaLabel,
   circuitDurationMin,
   circuitMuscleKey,
@@ -15,6 +16,7 @@ export {
   firstTrainingActivity,
   firstTrainingCircuitId,
   FLOW_KIND_LABELS,
+  flowKindLabel,
   isSameDayProgram,
   restDay,
   trainingDay,

@@ -1,16 +1,37 @@
 import { ActivityCategory, FlowKind, TabataMode } from '../enums';
+import { t } from '../i18n';
 import type { DayActivity, DayProgram, TrainingMeta } from '../interfaces';
 
+export function activityCategoryLabel(category: ActivityCategory): string {
+  return t(`activity.category.${category}`);
+}
+
+export function flowKindLabel(kind: FlowKind): string {
+  return t(`activity.flowKind.${kind}`);
+}
+
 export const ACTIVITY_CATEGORY_LABELS: Record<ActivityCategory, string> = {
-  [ActivityCategory.FLOW]: 'Flow',
-  [ActivityCategory.RUNNING]: 'Running',
-  [ActivityCategory.TRAINING]: 'Training',
+  get [ActivityCategory.FLOW]() {
+    return activityCategoryLabel(ActivityCategory.FLOW);
+  },
+  get [ActivityCategory.RUNNING]() {
+    return activityCategoryLabel(ActivityCategory.RUNNING);
+  },
+  get [ActivityCategory.TRAINING]() {
+    return activityCategoryLabel(ActivityCategory.TRAINING);
+  },
 };
 
 export const FLOW_KIND_LABELS: Record<FlowKind, string> = {
-  [FlowKind.STRETCHING]: 'Étirements',
-  [FlowKind.STRENGTHENING]: 'Renforcement',
-  [FlowKind.YOGA]: 'Yoga',
+  get [FlowKind.STRETCHING]() {
+    return flowKindLabel(FlowKind.STRETCHING);
+  },
+  get [FlowKind.STRENGTHENING]() {
+    return flowKindLabel(FlowKind.STRENGTHENING);
+  },
+  get [FlowKind.YOGA]() {
+    return flowKindLabel(FlowKind.YOGA);
+  },
 };
 
 export const DEFAULT_ACTIVITY_COLORS: Record<ActivityCategory, string> = {
@@ -171,31 +192,38 @@ export function dayDurationMin(day: DayProgram, circuits: CircuitLike[]): number
 }
 
 export function dayPrimaryLabel(day: DayProgram): string {
-  if (day.isRest || day.activities.length === 0) return 'Repos';
+  if (day.isRest || day.activities.length === 0) return t('activity.rest');
   if (day.activities.length === 1) return day.activities[0].name;
-  return `${day.activities[0].name} +${day.activities.length - 1}`;
+  return t('activity.andMore', {
+    count: day.activities.length - 1,
+    name: day.activities[0].name,
+  });
 }
 
 export function daySummaryLabel(day: DayProgram): string {
-  if (day.isRest || day.activities.length === 0) return 'Repos';
+  if (day.isRest || day.activities.length === 0) return t('activity.rest');
   if (day.activities.length === 1) {
     const activity = day.activities[0];
     if (activity.category === ActivityCategory.TRAINING) {
-      return `${activity.meta.exercises ?? 0} exercices`;
+      return t('activity.exercises', { count: activity.meta.exercises ?? 0 });
     }
     if (activity.category === ActivityCategory.RUNNING) {
       const parts: string[] = [];
-      if (activity.meta.distanceKm !== undefined) parts.push(`${activity.meta.distanceKm} km`);
-      if (activity.meta.durationMin !== undefined) parts.push(`${activity.meta.durationMin} min`);
-      if (activity.meta.isInterval) parts.push('Fractionné');
-      return parts.join(' · ') || 'Running';
+      if (activity.meta.distanceKm !== undefined) {
+        parts.push(t('activity.distanceKm', { count: activity.meta.distanceKm }));
+      }
+      if (activity.meta.durationMin !== undefined) {
+        parts.push(t('activity.durationMin', { count: activity.meta.durationMin }));
+      }
+      if (activity.meta.isInterval) parts.push(t('activity.interval'));
+      return parts.join(' · ') || t('activity.running');
     }
-    const kind = FLOW_KIND_LABELS[activity.meta.flowKind];
+    const kind = flowKindLabel(activity.meta.flowKind);
     return activity.meta.durationMin !== undefined
-      ? `${kind} · ${activity.meta.durationMin} min`
+      ? t('activity.flowWithDuration', { duration: activity.meta.durationMin, kind })
       : kind;
   }
-  return `${day.activities.length} activités`;
+  return t('activity.activities', { count: day.activities.length });
 }
 
 export function firstTrainingActivity(day: DayProgram): TrainingActivity | undefined {
@@ -214,20 +242,29 @@ export function activityMetaLabel(activity: DayActivity, circuits: CircuitLike[]
       ? circuits.find((c) => c.id === activity.meta.circuitId)
       : undefined;
     if (circuit) {
-      return `${circuit.exerciseIds.length} exo · ${circuit.rounds} rounds · ${circuit.cycles} cycles · ~${circuitDurationMin(circuit)} min`;
+      return t('activity.meta.trainingCircuit', {
+        cycles: circuit.cycles,
+        duration: circuitDurationMin(circuit),
+        exercises: circuit.exerciseIds.length,
+        rounds: circuit.rounds,
+      });
     }
-    return `${activity.meta.exercises ?? 0} exercices`;
+    return t('activity.exercises', { count: activity.meta.exercises ?? 0 });
   }
   if (activity.category === ActivityCategory.RUNNING) {
     const parts: string[] = [];
-    if (activity.meta.distanceKm !== undefined) parts.push(`${activity.meta.distanceKm} km`);
-    if (activity.meta.durationMin !== undefined) parts.push(`${activity.meta.durationMin} min`);
-    if (activity.meta.isInterval) parts.push('Fractionné');
-    return parts.join(' · ') || 'Course';
+    if (activity.meta.distanceKm !== undefined) {
+      parts.push(t('activity.distanceKm', { count: activity.meta.distanceKm }));
+    }
+    if (activity.meta.durationMin !== undefined) {
+      parts.push(t('activity.durationMin', { count: activity.meta.durationMin }));
+    }
+    if (activity.meta.isInterval) parts.push(t('activity.interval'));
+    return parts.join(' · ') || t('activity.course');
   }
-  const kind = FLOW_KIND_LABELS[activity.meta.flowKind];
+  const kind = flowKindLabel(activity.meta.flowKind);
   return activity.meta.durationMin !== undefined
-    ? `${kind} · ${activity.meta.durationMin} min`
+    ? t('activity.flowWithDuration', { duration: activity.meta.durationMin, kind })
     : kind;
 }
 

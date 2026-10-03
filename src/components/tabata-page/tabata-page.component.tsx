@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IconGear, IconPause, IconPlay, IconPlus, IconRotateCcw } from '../../assets/icons';
 import freeTabataDefaults from '../../config/tabata-free.json';
 import { TabataMode, TimerPhase } from '../../enums';
+import { t } from '../../i18n';
 import { Button } from '../button';
 import { Stepper } from '../stepper';
 
@@ -79,8 +80,8 @@ function hslToHex(h: number, s: number, l: number): string {
     return rgbToHex(v, v, v);
   }
 
-  const hue2rgb = (p: number, q: number, t: number) => {
-    let tt = t;
+  const hue2rgb = (p: number, q: number, hue: number) => {
+    let tt = hue;
     if (tt < 0) tt += 1;
     if (tt > 1) tt -= 1;
     if (tt < 1 / 6) return p + (q - p) * 6 * tt;
@@ -171,6 +172,16 @@ const TAG_COLORS: Record<string, AccentColor> = {
 
 function exerciseColor(exercise: Exercise): string {
   return TAG_COLORS[exercise.tags[0]] ?? '#888';
+}
+
+function tabataPhaseLabel(phase: TimerPhase): string {
+  return t(`tabata.phase.${phase}`);
+}
+
+function tabataInfoContextLabel(phase: TimerPhase): string {
+  if (phase === TimerPhase.RECOVERY) return t('tabata.phase.sessionEnd');
+  if (phase === TimerPhase.INTER_CYCLE_REST) return t('tabata.phase.betweenCycles');
+  return tabataPhaseLabel(phase);
 }
 
 interface TimerStep {
@@ -293,8 +304,10 @@ export function TabataPage({
 
   const exerciseNames =
     localCircuit.exerciseIds.length > 0
-      ? localCircuit.exerciseIds.map((id) => exercises.find((e) => e.id === id)?.name ?? 'Exercice')
-      : ['Exercice'];
+      ? localCircuit.exerciseIds.map(
+          (id) => exercises.find((e) => e.id === id)?.name ?? t('activity.exerciseFallback'),
+        )
+      : [t('activity.exerciseFallback')];
 
   const [cycle, setCycle] = useState(1);
   const [round, setRound] = useState(1);
@@ -411,14 +424,7 @@ export function TabataPage({
     });
   };
 
-  const PHASE_LABELLS: Partial<Record<TimerPhase, string>> = {
-    [TimerPhase.PREP]: 'Préparation',
-    [TimerPhase.WORK]: 'Travail',
-    [TimerPhase.REST]: 'Repos',
-    [TimerPhase.RECOVERY]: 'Récupération',
-    [TimerPhase.INTER_CYCLE_REST]: 'Repos inter-cycle',
-  };
-  const phaseLabel = PHASE_LABELLS[phase] ?? 'Repos inter-cycle';
+  const phaseLabel = tabataPhaseLabel(phase);
 
   const openSheet = () => {
     setDraft(localCircuit);
@@ -450,20 +456,13 @@ export function TabataPage({
   }
   const nextExerciseName = exerciseNames[nextIndex];
 
-  const PHASE_LABELS: Partial<Record<TimerPhase, string>> = {
-    [TimerPhase.PREP]: 'Préparation',
-    [TimerPhase.RECOVERY]: 'Fin de séance',
-    [TimerPhase.INTER_CYCLE_REST]: 'Entre cycles',
-    [TimerPhase.REST]: 'Repos',
-  };
-
-  const infoContext = PHASE_LABELS[phase] ?? 'Exercice actuel';
+  const infoContext = tabataInfoContextLabel(phase);
 
   let infoMain = exerciseNames[exerciseIndex];
   if (phase === TimerPhase.PREP) {
-    infoMain = 'Préparez-vous';
+    infoMain = t('tabata.prepMessage');
   } else if (isRestPhase) {
-    infoMain = 'Repos';
+    infoMain = t('common.rest');
   }
 
   const showNext =
@@ -480,13 +479,28 @@ export function TabataPage({
     step: number;
     unit: string;
   }[] = [
-    { key: 'prepTime', label: 'Préparation', step: 5, unit: 'sec' },
-    { key: 'exerciseTime', label: "Temps d'exercice", step: 5, unit: 'sec' },
-    { key: 'restBetweenExercises', label: 'Repos entre exercices', step: 5, unit: 'sec' },
-    { key: 'rounds', label: 'Rounds / cycle', min: 1, step: 1, unit: '×' },
-    { key: 'cycles', label: 'Nombre de cycles', min: 1, step: 1, unit: '×' },
-    { key: 'restBetweenCycles', label: 'Repos entre cycles', step: 15, unit: 'sec' },
-    { key: 'recoveryTime', label: 'Récupération finale', step: 15, unit: 'sec' },
+    { key: 'prepTime', label: t('tabata.config.timing.prep'), step: 5, unit: 'sec' },
+    { key: 'exerciseTime', label: t('tabata.config.timing.exercise'), step: 5, unit: 'sec' },
+    {
+      key: 'restBetweenExercises',
+      label: t('tabata.config.timing.restBetweenExercises'),
+      step: 5,
+      unit: 'sec',
+    },
+    { key: 'rounds', label: t('tabata.config.timing.roundsPerCycle'), min: 1, step: 1, unit: '×' },
+    { key: 'cycles', label: t('tabata.config.timing.cyclesCount'), min: 1, step: 1, unit: '×' },
+    {
+      key: 'restBetweenCycles',
+      label: t('tabata.config.timing.restBetweenCycles'),
+      step: 15,
+      unit: 'sec',
+    },
+    {
+      key: 'recoveryTime',
+      label: t('tabata.config.timing.finalRecovery'),
+      step: 15,
+      unit: 'sec',
+    },
   ];
 
   const sheet = sheetOpen && (
@@ -502,7 +516,7 @@ export function TabataPage({
         className="rounded-t-3xl px-5 pt-5 pb-6 flex flex-col"
         style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '78%' }}>
         <div className="flex items-center justify-between mb-4 shrink-0">
-          <p className="font-900 text-lg">Configuration</p>
+          <p className="font-900 text-lg">{t('tabata.config.title')}</p>
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none"
             style={{ backgroundColor: '#2a2a2a', color: '#888' }}
@@ -541,23 +555,22 @@ export function TabataPage({
           </div>
 
           <p className="text-xs font-600 leading-relaxed" style={{ color: '#666' }}>
-            Le repos après le dernier round d&apos;un cycle est ignoré : il est inclus dans le repos
-            entre cycles (ou la récupération finale pour le dernier cycle).
+            {t('tabata.config.restHint')}
           </p>
 
           <p className="text-xs font-700 text-right" style={{ color: '#555' }}>
-            Durée estimée : ~{draftDurationMin} min
+            {t('tabata.config.estimatedDuration', { minutes: draftDurationMin })}
           </p>
 
           <div>
             <p
               className="text-xs font-800 tracking-widest uppercase mb-2.5"
               style={{ color: accent }}>
-              Exercices ({draft.exerciseIds.length})
+              {t('tabata.config.exercisesHeading', { count: draft.exerciseIds.length })}
             </p>
             {draftExercises.length === 0 ? (
               <p className="text-sm font-600" style={{ color: '#555' }}>
-                Aucun exercice sélectionné
+                {t('tabata.config.noExercisesSelected')}
               </p>
             ) : (
               <div className="space-y-2">
@@ -593,7 +606,7 @@ export function TabataPage({
             <Button
               className="w-full rounded-xl py-3 mt-3 font-800 text-sm transition-all active:scale-95"
               icon={IconPlus}
-              label="Ajouter des exercices"
+              label={t('tabata.config.addExercises')}
               style={{
                 backgroundColor: '#1a1a1a',
                 border: `1px dashed ${withAlpha(accent, 0.3)}`,
@@ -609,13 +622,13 @@ export function TabataPage({
         <div className="shrink-0 mt-4 flex items-center gap-2">
           <Button
             className="flex-1 rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
-            label="Appliquer"
+            label={t('common.apply')}
             style={{ backgroundColor: accent, color: '#0d0d0d' }}
             onClick={applyDraft}
           />
           {isFree && (
             <button
-              aria-label="Reset"
+              aria-label={t('common.aria.reset')}
               className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all active:scale-95"
               style={{ backgroundColor: '#1a1a1a', color: '#888' }}
               onClick={handleResetConfig}>
@@ -637,7 +650,7 @@ export function TabataPage({
             className="rounded-t-3xl px-5 pt-5 pb-6 flex flex-col"
             style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', maxHeight: '72%' }}>
             <div className="flex items-center justify-between mb-4 shrink-0">
-              <p className="font-900 text-lg">Choisir des exercices</p>
+              <p className="font-900 text-lg">{t('tabata.picker.title')}</p>
               <button
                 className="w-8 h-8 rounded-full flex items-center justify-center text-xl leading-none"
                 style={{ backgroundColor: '#2a2a2a', color: '#888' }}
@@ -696,7 +709,7 @@ export function TabataPage({
             {localCircuit.name}
           </p>
           <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-            Tabata terminé
+            {t('tabata.finished')}
           </p>
         </div>
 
@@ -707,9 +720,9 @@ export function TabataPage({
             <p className="text-4xl font-900 mb-2" style={{ color: accent }}>
               ✓
             </p>
-            <p className="text-xl font-900">Circuit complété</p>
+            <p className="text-xl font-900">{t('tabata.completed.title')}</p>
             <p className="text-sm font-600 mt-2" style={{ color: '#888' }}>
-              Durée {formatDuration(elapsedSec)}
+              {t('tabata.completed.duration', { duration: formatDuration(elapsedSec) })}
             </p>
           </div>
 
@@ -721,7 +734,7 @@ export function TabataPage({
                 {TOTAL_CYCLES}
               </p>
               <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
-                Cycles
+                {t('tabata.progress.cycles')}
               </p>
             </div>
             <div
@@ -731,7 +744,7 @@ export function TabataPage({
                 {TOTAL_ROUNDS}
               </p>
               <p className="text-xs font-700 mt-0.5" style={{ color: '#555' }}>
-                Rounds / cycle
+                {t('tabata.progress.roundsPerCycle')}
               </p>
             </div>
           </div>
@@ -739,7 +752,7 @@ export function TabataPage({
           <p
             className="text-xs font-800 tracking-widest uppercase mb-2.5"
             style={{ color: '#555' }}>
-            Exercices
+            {t('tabata.summary.exercisesTitle')}
           </p>
           <div className="space-y-2 mb-6">
             {exerciseNames.map((name, i) => {
@@ -758,14 +771,14 @@ export function TabataPage({
           {isFree ? (
             <Button
               className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
-              label="Recommencer"
+              label={t('tabata.restart')}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={handleReset}
             />
           ) : (
             <Button
               className="w-full rounded-2xl py-4 font-900 text-sm transition-all active:scale-95"
-              label="Fermer"
+              label={t('common.close')}
               style={{ backgroundColor: accent, color: '#0d0d0d' }}
               onClick={onClose}
             />
@@ -784,7 +797,7 @@ export function TabataPage({
           <div className="w-10 shrink-0" />
         ) : (
           <button
-            aria-label="Fermer"
+            aria-label={t('common.aria.close')}
             className="w-10 h-10 rounded-full flex items-center justify-center text-xl leading-none font-900 shrink-0"
             style={{ backgroundColor: '#1a1a1a', color: '#888' }}
             onClick={onClose}>
@@ -796,12 +809,12 @@ export function TabataPage({
             {localCircuit.name}
           </p>
           <p className="text-xs font-600 mt-0.5" style={{ color: '#555' }}>
-            Tabata
+            {t('tabata.subtitle')}
           </p>
         </div>
         {isFree ? (
           <button
-            aria-label="Configuration"
+            aria-label={t('common.aria.configuration')}
             className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
             style={{ backgroundColor: '#1a1a1a', color: '#888' }}
             onClick={openSheet}>
@@ -814,8 +827,8 @@ export function TabataPage({
 
       <div className="px-5 flex gap-3 mb-4">
         {[
-          { color: accent, label: 'Rounds', total: TOTAL_ROUNDS, value: round },
-          { color: '#fff', label: 'Cycles', total: TOTAL_CYCLES, value: cycle },
+          { color: accent, label: t('tabata.progress.rounds'), total: TOTAL_ROUNDS, value: round },
+          { color: '#fff', label: t('tabata.progress.cycles'), total: TOTAL_CYCLES, value: cycle },
         ].map((bar) => (
           <div
             key={bar.label}
@@ -895,7 +908,10 @@ export function TabataPage({
           <p className="text-2xl font-900 leading-tight">{infoMain}</p>
           {showNext && (
             <p className="text-base font-700 mt-3" style={{ color: '#888' }}>
-              {phase === TimerPhase.PREP ? 'Premier' : 'Suivant'} : {nextExerciseName}
+              {t('tabata.next.label', {
+                name: nextExerciseName,
+                which: phase === TimerPhase.PREP ? t('tabata.next.first') : t('tabata.next.next'),
+              })}
             </p>
           )}
         </div>
@@ -907,7 +923,7 @@ export function TabataPage({
           'pb-4': isFree,
         })}>
         <button
-          aria-label={isRunning ? 'Pause' : 'Lecture'}
+          aria-label={isRunning ? t('common.aria.pause') : t('common.aria.play')}
           className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform active:scale-95"
           style={{
             backgroundColor: phaseColor,
